@@ -45,9 +45,13 @@ export const git004: Rule = {
       }
     }
 
+    const visitedRealDirs = new Set<string>();
+
     // Recursively scan subdirectories for nested .git
-    async function scanDir(currentDir: string, currentRel: string, depth: number): Promise<void> {
-      if (depth > 6) return; // Prevent excessive recursion depth
+    async function scanDir(currentDir: string, currentRel: string): Promise<void> {
+      const realCurrent = await fsp.realpath(currentDir).catch(() => null);
+      if (!realCurrent || visitedRealDirs.has(realCurrent)) return;
+      visitedRealDirs.add(realCurrent);
 
       try {
         const entries = await fsp.readdir(currentDir, { withFileTypes: true });
@@ -93,7 +97,7 @@ export const git004: Rule = {
               }
             }
 
-            await scanDir(fullPath, relPath, depth + 1);
+            await scanDir(fullPath, relPath);
           }
         }
       } catch {
@@ -101,7 +105,7 @@ export const git004: Rule = {
       }
     }
 
-    await scanDir(context.rootDir, '', 0);
+    await scanDir(context.rootDir, '');
 
     return results;
   }

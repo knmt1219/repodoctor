@@ -95,8 +95,12 @@ export const git005: Rule = {
       }
     }
 
-    async function scanDir(currentDir: string, currentRel: string, depth: number): Promise<void> {
-      if (depth > 8) return;
+    const visitedRealDirs = new Set<string>();
+
+    async function scanDir(currentDir: string, currentRel: string): Promise<void> {
+      const realCurrent = await fsp.realpath(currentDir).catch(() => null);
+      if (!realCurrent || visitedRealDirs.has(realCurrent)) return;
+      visitedRealDirs.add(realCurrent);
 
       try {
         const entries = await fsp.readdir(currentDir, { withFileTypes: true });
@@ -109,7 +113,7 @@ export const git005: Rule = {
           if (entry.isSymbolicLink()) {
             await inspectSymlink(fullPath, relPath);
           } else if (entry.isDirectory()) {
-            await scanDir(fullPath, relPath, depth + 1);
+            await scanDir(fullPath, relPath);
           }
         }
       } catch {
@@ -118,7 +122,7 @@ export const git005: Rule = {
     }
 
     // 1. Scan filesystem directly for all symlinks (including broken ones)
-    await scanDir(context.rootDir, '', 0);
+    await scanDir(context.rootDir, '');
 
     // 2. Also check files in context.files in case any virtual or custom file was passed
     const files = await context.listFiles();

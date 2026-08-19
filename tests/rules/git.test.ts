@@ -157,4 +157,20 @@ describe('Git & Repository Hygiene Rules', () => {
       await fsp.rm(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('git-004: should detect arbitrarily deep nested .git directories beyond shallow depth limits', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-deep-git-'));
+    try {
+      const veryDeepGit = path.join(tmpDir, 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', '.git');
+      await fsp.mkdir(veryDeepGit, { recursive: true });
+
+      const ctx = await createRuleContext({ rootDir: tmpDir });
+      const res = await git004.check(ctx);
+      assert.equal(res.length, 1);
+      assert.equal(res[0]?.ruleId, 'git-004');
+      assert.ok(res[0]?.file && res[0].file.includes('d1/d2/d3/d4/d5/d6/d7/d8'));
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
 });
