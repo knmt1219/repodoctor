@@ -1,0 +1,47 @@
+name: 🐛 Bug Report
+description: Report an issue or false positive with RepoDoctor
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug or false positive in RepoDoctor!
+  - type: input
+    id: version
+    attributes:
+      label: RepoDoctor Version
+      description: What version of RepoDoctor are you running? (repodoctor --version)
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating System & Node Version
+      description: OS and Node.js version
+      placeholder: e.g. Ubuntu 22.04, Node v20.10.0
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem Description
+      description: What happened? If this is a false positive, which rule was triggered?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: Steps or minimal repository files to reproduce the behavior
+      placeholder: |
+        1. Run `repodoctor check`
+        2. Rule `sec-001` triggered unexpectedly on ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Terminal Output / Logs
+      description: Please copy and paste any relevant terminal output
+      render: shell

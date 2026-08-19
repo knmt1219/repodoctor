@@ -1,0 +1,43 @@
+name: 💡 Feature or Rule Proposal
+description: Suggest an idea or propose a new repository health / security rule
+labels: ["enhancement", "rule-proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Suggest an idea or new linting rule for RepoDoctor!
+  - type: dropdown
+    id: category
+    attributes:
+      label: Rule Category
+      description: What category does this feature/rule belong to?
+      options:
+        - Security & Secrets
+        - OSS & Community Standards
+        - CI/CD Best Practices
+        - Package & Dependency Hygiene
+        - Git & File Structure
+        - Docker & Containers
+        - CLI / Reporter Enhancement
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Motivation
+      description: What anti-pattern or repository issue does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution / Rule Logic
+      description: Describe how the rule should detect and fix the issue. Include good/bad examples if applicable.
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to submit a Pull Request implementing this rule!
