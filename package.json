@@ -1,0 +1,61 @@
+{
+  "name": "repodoctor",
+  "version": "0.1.0",
+  "description": "Fast, zero-config Repository Health, Security & CI Linter for modern open-source projects",
+  "keywords": [
+    "linter",
+    "repository-health",
+    "github-actions",
+    "security-scanner",
+    "ci-cd",
+    "open-source",
+    "sarif",
+    "code-quality"
+  ],
+  "homepage": "https://github.com/repodoctor/repodoctor#readme",
+  "bugs": {
+    "url": "https://github.com/repodoctor/repodoctor/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/repodoctor/repodoctor.git"
+  },
+  "license": "MIT",
+  "author": "RepoDoctor Contributors",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "repodoctor": "./bin/repodoctor.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test dist/tests/**/*.test.js",
+    "test:coverage": "npm run build && node --test --experimental-test-coverage dist/tests/**/*.test.js",
+    "doctor": "node ./bin/repodoctor.js check .",
+    "doctor:fix": "node ./bin/repodoctor.js fix .",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "fast-glob": "^3.3.2",
+    "picocolors": "^1.1.1",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "typescript": "^5.7.2"
+  }
+}

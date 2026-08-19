@@ -1,0 +1,28 @@
+# RepoDoctor Configuration (.repodoctor.yml)
+scoreThreshold: 80
+maxWarnings: -1
+
+categories:
+  security: true
+  oss: true
+  ci: true
+  package: true
+  git: true
+  docker: true
+
+rules:
+  sec-001: error
+  sec-002: warn
+  sec-003: error
+  sec-004: error
+  sec-005: error
+  ci-001: warn
+  ci-002: warn
+  pkg-001: error
+  git-001: warn
+
+ignore:
+  - '**/node_modules/**'
+  - '**/.git/**'
+  - '**/dist/**'
+  - '**/coverage/**'
