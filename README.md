@@ -207,12 +207,12 @@ RepoDoctor includes **29 built-in production rules** categorized across 6 core d
 - **`pkg-001`** *(error)*: **Committed Lockfile** — Ensures package manifests have matching lockfiles (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `Cargo.lock`, `poetry.lock`, `uv.lock`, `go.sum`).
 - **`pkg-002`** *(error)*: **No Conflicting Lockfiles** — Detects accidental co-existence of multiple lockfiles (e.g. `package-lock.json` AND `yarn.lock`).
 - **`pkg-003`** *(warn)*: **No Wildcard Dependencies** — Flags dangerous `*` or `latest` unconstrained dependencies in `package.json`.
-- **`pkg-004`** *(warn)*: **Standard Lifecycle Scripts** — Ensures `package.json#scripts` includes executable standard lifecycle scripts (e.g. `test`).
+- **`pkg-004`** *(warn)*: **Standard Lifecycle Scripts** — Ensures `package.json#scripts` defines required executable lifecycle scripts (defaults to `['test']`, configurable via `options.requiredScripts`).
 
 ### 5. 📁 Git & File Structure Hygiene (`git`)
 - **`git-001`** *(warn, fixable)*: **Cross-Platform `.gitattributes`** — Ensures `* text=auto eol=lf` is configured to prevent CRLF corruption.
 - **`git-002`** *(error)*: **No Merge Conflict Markers** — Detects committed `<<<<<<<`, `=======`, `>>>>>>>` markers in files.
-- **`git-003`** *(warn)*: **Large Binary Tracking** — Warns on large binary files (>1MB) tracked without Git LFS.
+- **`git-003`** *(warn)*: **Large Binary Tracking** — Warns on large binary files tracked without Git LFS (defaults to >1024 KB / 1 MB threshold, configurable via `options.maxBinarySizeKb`).
 - **`git-004`** *(error)*: **No Nested `.git` Directories** — Detects accidental embedded git repositories or unregistered submodules.
 - **`git-005`** *(error)*: **No Broken Symbolic Links** — Detects dead or repository-escaping symlinks.
 
@@ -254,6 +254,12 @@ rules:
   sec-002: warn   # Workflow permissions
   ci-001: error   # Enforce timeouts as strict errors
   oss-004: off    # Disable Code of Conduct check
+
+# Global analyzer options
+options:
+  checkTrackedOnly: false       # Scan only git-tracked files when true
+  requiredScripts: ['test']      # Lifecycle scripts required by pkg-004
+  maxBinarySizeKb: 1024          # Binary size threshold in KB for git-003
 
 # Files and directories to ignore
 ignore:
