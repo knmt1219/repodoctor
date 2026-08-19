@@ -8,7 +8,7 @@ export const pkg004: Rule = {
   description: 'Standard lifecycle scripts (especially "test") provide an unambiguous interface for contributors and CI pipelines to execute validation suites.',
   category: 'package',
   defaultSeverity: 'warn',
-  fixable: true,
+  fixable: false,
   docs: {
     whyItMatters: 'Contributors and automated tools rely on standard `npm test` and `npm run build` commands to verify changes. Missing scripts require contributors to guess commands.',
     badExample: '{\n  "scripts": {}\n}',
@@ -38,7 +38,7 @@ export const pkg004: Rule = {
         severity: 'warn',
         file: 'package.json',
         message: `package.json is missing standard executable script(s): ${missing.join(', ')}`,
-        fixable: true,
+        fixable: false,
         remediation: `Add a functional "${missing[0]}" script in package.json.`
       });
     }

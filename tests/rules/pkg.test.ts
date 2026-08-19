@@ -56,7 +56,7 @@ describe('Package & Dependency Hygiene Rules (pkg-001 to pkg-004)', () => {
     assert.equal(res2.length, 0);
   });
 
-  it('pkg-002: should flag multiple conflicting lockfiles', async () => {
+  it('pkg-002: should flag multiple conflicting lockfiles across different managers', async () => {
     const ctx = createMockContext({
       'package.json': JSON.stringify({ name: 'pkg' }),
       'package-lock.json': '{}',
@@ -65,6 +65,16 @@ describe('Package & Dependency Hygiene Rules (pkg-001 to pkg-004)', () => {
     const res = await pkg002.check(ctx);
     assert.equal(res.length, 1);
     assert.equal(res[0]?.ruleId, 'pkg-002');
+  });
+
+  it('pkg-002: should not flag dual Bun lockfiles (bun.lock and bun.lockb)', async () => {
+    const ctx = createMockContext({
+      'package.json': JSON.stringify({ name: 'pkg' }),
+      'bun.lock': 'lockfile',
+      'bun.lockb': 'binary'
+    });
+    const res = await pkg002.check(ctx);
+    assert.equal(res.length, 0);
   });
 
   it('pkg-003: should flag wildcard * dependencies', async () => {

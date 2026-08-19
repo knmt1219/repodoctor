@@ -8,7 +8,7 @@ import {
   formatSarifReport,
   formatTerminalReport
 } from '../../reporters/index.js';
-import { writeFileSafe } from '../../utils/fs.js';
+import { dirExists, writeFileSafe } from '../../utils/fs.js';
 
 export interface CheckCliOptions {
   config?: string;
@@ -24,6 +24,11 @@ export async function runCheckCommand(target = '.', options: CheckCliOptions = {
   const rootDir = path.resolve(process.cwd(), target);
 
   try {
+    if (!(await dirExists(rootDir))) {
+      console.error(`Error: Target directory does not exist: "${target}" (resolved to: "${rootDir}")`);
+      return 2;
+    }
+
     const config = await loadConfig(rootDir, options.config);
 
     const engine = new RepoDoctorEngine({
@@ -74,8 +79,17 @@ export async function runCheckCommand(target = '.', options: CheckCliOptions = {
     }
 
     // Determine exit code
-    const scoreThreshold = options.scoreThreshold !== undefined ? parseInt(options.scoreThreshold, 10) : config.scoreThreshold ?? 75;
-    const maxWarnings = options.maxWarnings !== undefined ? parseInt(options.maxWarnings, 10) : config.maxWarnings ?? -1;
+    let scoreThreshold = config.scoreThreshold ?? 75;
+    if (options.scoreThreshold !== undefined) {
+      const parsed = parseInt(options.scoreThreshold, 10);
+      if (!isNaN(parsed)) scoreThreshold = parsed;
+    }
+
+    let maxWarnings = config.maxWarnings ?? -1;
+    if (options.maxWarnings !== undefined) {
+      const parsed = parseInt(options.maxWarnings, 10);
+      if (!isNaN(parsed)) maxWarnings = parsed;
+    }
 
     // Fail conditions
     if (report.summary.errors > 0) {

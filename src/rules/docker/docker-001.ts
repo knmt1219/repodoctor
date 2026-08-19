@@ -1,5 +1,11 @@
+import path from 'node:path';
 import { Rule, RuleResult } from '../../core/types.js';
-import { findLineAndColumn } from '../../utils/parsers.js';
+import { findLineAndColumn, parseLines } from '../../utils/parsers.js';
+
+function isDockerfile(filePath: string): boolean {
+  const base = path.basename(filePath).toLowerCase();
+  return base === 'dockerfile' || base.startsWith('dockerfile.') || base.endsWith('.dockerfile');
+}
 
 export const docker001: Rule = {
   id: 'docker-001',
@@ -17,28 +23,37 @@ export const docker001: Rule = {
   async check(context): Promise<RuleResult[]> {
     const results: RuleResult[] = [];
     const files = await context.listFiles();
-    const dockerFiles = files.filter(f => f.toLowerCase().includes('dockerfile'));
+    const dockerFiles = files.filter(isDockerfile);
 
     for (const filePath of dockerFiles) {
       const content = await context.readFile(filePath);
       if (!content) continue;
 
-      const fromRegex = /^FROM\s+([^\s]+)/gim;
-      let match: RegExpExecArray | null;
+      const lines = parseLines(content);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!;
+        const trimmed = line.trim();
+        if (trimmed.startsWith('#')) continue;
 
-      while ((match = fromRegex.exec(content)) !== null) {
-        const fullImage = match[1]!;
+        // Match FROM with optional --platform flag and AS alias
+        const fromMatch = /^FROM\s+(?:--platform=\S+\s+)?([^\s]+)(?:\s+AS\s+\S+)?/i.exec(trimmed);
+        if (!fromMatch) continue;
+
+        const fullImage = fromMatch[1]!;
+        // Skip scratch or local stage aliases (e.g. FROM builder AS app)
+        if (fullImage.toLowerCase() === 'scratch') continue;
+
         // Check if image has tag or sha
         if (fullImage.includes(':latest') || (!fullImage.includes(':') && !fullImage.includes('@'))) {
-          const loc = findLineAndColumn(content, match[0]);
+          const loc = findLineAndColumn(content, fromMatch[0]);
           results.push({
             ruleId: 'docker-001',
             ruleTitle: docker001.title,
             category: 'docker',
             severity: 'warn',
             file: filePath,
-            line: loc?.line,
-            column: loc?.column,
+            line: loc?.line ?? (i + 1),
+            column: loc?.column ?? 1,
             message: `Base image "${fullImage}" in "${filePath}" is unpinned or using ':latest'`,
             fixable: false,
             remediation: `Pin "${fullImage}" to a specific version tag or immutable SHA digest.`

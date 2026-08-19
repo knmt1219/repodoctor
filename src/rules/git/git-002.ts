@@ -1,9 +1,9 @@
 import { Rule, RuleResult } from '../../core/types.js';
 import { parseLines } from '../../utils/parsers.js';
 
-const CONFLICT_START = /^<{7}\s+/m;
+const CONFLICT_START = /^<{7}(?:\s+.*)?$/m;
 const CONFLICT_MID = /^={7}$/m;
-const CONFLICT_END = /^>{7}\s+/m;
+const CONFLICT_END = /^>{7}(?:\s+.*)?$/m;
 
 export const git002: Rule = {
   id: 'git-002',
@@ -31,7 +31,11 @@ export const git002: Rule = {
       const content = await context.readFile(filePath);
       if (!content) continue;
 
-      if (CONFLICT_START.test(content) && CONFLICT_MID.test(content) && CONFLICT_END.test(content)) {
+      const hasStart = CONFLICT_START.test(content);
+      const hasEnd = CONFLICT_END.test(content);
+      const hasMid = CONFLICT_MID.test(content);
+
+      if (hasStart && (hasEnd || hasMid)) {
         const lines = parseLines(content);
         let firstLine = 1;
         for (let i = 0; i < lines.length; i++) {

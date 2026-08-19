@@ -1,9 +1,15 @@
 import path from 'node:path';
-import { fileExists, writeFileSafe } from '../../utils/fs.js';
+import { dirExists, fileExists, writeFileSafe } from '../../utils/fs.js';
 import { colors } from '../../utils/colors.js';
 
 export async function runInitCommand(target = '.'): Promise<number> {
   const rootDir = path.resolve(process.cwd(), target);
+
+  if (!(await dirExists(rootDir))) {
+    console.error(`${colors.red('✖')} Target directory does not exist: "${target}"`);
+    return 2;
+  }
+
   const configPath = path.join(rootDir, '.repodoctor.yml');
 
   if (await fileExists(configPath)) {
@@ -12,7 +18,7 @@ export async function runInitCommand(target = '.'): Promise<number> {
   }
 
   const sampleConfig = `# RepoDoctor Configuration (.repodoctor.yml)
-# https://github.com/repodoctor/repodoctor
+# https://github.com/knmt1219/repodoctor
 
 # Minimum acceptable health score (0 - 100)
 scoreThreshold: 80
@@ -50,12 +56,12 @@ ignore:
   - '**/coverage/**'
 `;
 
-  const ok = await writeFileSafe(configPath, sampleConfig);
+  const ok = await writeFileSafe(configPath, sampleConfig, rootDir);
   if (ok) {
     console.log(`${colors.green('✔')} Created RepoDoctor configuration at ${colors.bold(configPath)}`);
     return 0;
   } else {
     console.error(`${colors.red('✖')} Failed to write configuration file at ${configPath}`);
-    return 1;
+    return 2;
   }
 }

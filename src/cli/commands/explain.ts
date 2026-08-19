@@ -6,7 +6,7 @@ export async function runExplainCommand(ruleId: string): Promise<number> {
 
   if (!rule) {
     console.error(`${colors.red('✖')} Unknown rule: "${ruleId}". Run 'repodoctor rules' to see all rules.`);
-    return 1;
+    return 2;
   }
 
   console.log('');

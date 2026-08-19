@@ -20,13 +20,29 @@ export const sec006: Rule = {
 
     for (const filePath of workflowFiles) {
       if (!filePath.endsWith('.yml') && !filePath.endsWith('.yaml')) continue;
+
+      const parsed = await context.readYaml<Record<string, unknown>>(filePath);
+      if (!parsed) continue;
+
+      const onTrigger = parsed.on ?? parsed.True;
+      let triggersOnPRTarget = false;
+
+      if (typeof onTrigger === 'string' && onTrigger === 'pull_request_target') {
+        triggersOnPRTarget = true;
+      } else if (Array.isArray(onTrigger) && onTrigger.includes('pull_request_target')) {
+        triggersOnPRTarget = true;
+      } else if (typeof onTrigger === 'object' && onTrigger !== null && 'pull_request_target' in onTrigger) {
+        triggersOnPRTarget = true;
+      }
+
+      if (!triggersOnPRTarget) continue;
+
       const content = await context.readFile(filePath);
       if (!content) continue;
 
-      const hasPRTarget = /pull_request_target/i.test(content);
       const hasHeadCheckout = /github\.event\.pull_request\.head\.(?:sha|ref)/i.test(content);
 
-      if (hasPRTarget && hasHeadCheckout) {
+      if (hasHeadCheckout) {
         const loc = findLineAndColumn(content, /github\.event\.pull_request\.head\.(?:sha|ref)/i);
         results.push({
           ruleId: 'sec-006',

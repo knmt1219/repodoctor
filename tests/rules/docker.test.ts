@@ -22,6 +22,22 @@ describe('Docker Hygiene Rules', () => {
     assert.equal(res.length, 0);
   });
 
+  it('docker-001: should handle --platform and multi-stage AS aliases', async () => {
+    const ctx = createMockContext({
+      Dockerfile: 'FROM --platform=linux/amd64 node:20.17-alpine AS builder\nFROM scratch\n'
+    });
+    const res = await docker001.check(ctx);
+    assert.equal(res.length, 0);
+  });
+
+  it('docker-001: should ignore commented FROM lines in Dockerfiles', async () => {
+    const ctx = createMockContext({
+      Dockerfile: '# FROM node:latest\nFROM node:20.17-alpine\n'
+    });
+    const res = await docker001.check(ctx);
+    assert.equal(res.length, 0);
+  });
+
   it('docker-002: should flag missing .dockerignore if Dockerfile exists', async () => {
     const ctx = createMockContext({
       Dockerfile: 'FROM node:20.17-alpine\n'
@@ -35,6 +51,14 @@ describe('Docker Hygiene Rules', () => {
     const ctx = createMockContext({
       Dockerfile: 'FROM node:20.17-alpine\n',
       '.dockerignore': 'node_modules\n.git\n'
+    });
+    const res = await docker002.check(ctx);
+    assert.equal(res.length, 0);
+  });
+
+  it('docker-002: should not trigger on regular files containing dockerfile in name', async () => {
+    const ctx = createMockContext({
+      'src/dockerfile_utils.ts': 'export const x = 1;\n'
     });
     const res = await docker002.check(ctx);
     assert.equal(res.length, 0);

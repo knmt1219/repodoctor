@@ -6,7 +6,7 @@ export const ci003: Rule = {
   description: 'Repositories should have at least one automated GitHub Actions workflow in `.github/workflows/` that validates builds, tests, or linting on push or pull requests.',
   category: 'ci',
   defaultSeverity: 'warn',
-  fixable: true,
+  fixable: false,
   docs: {
     whyItMatters: 'Automated CI guarantees that proposed changes do not break test suites or introduce regressions before merging.',
     badExample: 'No workflows in .github/workflows directory.',
@@ -25,7 +25,7 @@ export const ci003: Rule = {
         category: 'ci',
         severity: 'warn',
         message: 'No GitHub Actions workflows found in .github/workflows/',
-        fixable: true,
+        fixable: false,
         remediation: 'Create `.github/workflows/ci.yml` to automatically run tests and linters.'
       });
     }

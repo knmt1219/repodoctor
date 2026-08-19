@@ -1,4 +1,10 @@
+import path from 'node:path';
 import { Rule, RuleResult } from '../../core/types.js';
+
+function isDockerfile(filePath: string): boolean {
+  const base = path.basename(filePath).toLowerCase();
+  return base === 'dockerfile' || base.startsWith('dockerfile.') || base.endsWith('.dockerfile');
+}
 
 export const docker002: Rule = {
   id: 'docker-002',
@@ -16,7 +22,7 @@ export const docker002: Rule = {
   async check(context): Promise<RuleResult[]> {
     const results: RuleResult[] = [];
     const files = await context.listFiles();
-    const hasDockerfile = files.some(f => f.toLowerCase().includes('dockerfile'));
+    const hasDockerfile = files.some(isDockerfile);
 
     if (hasDockerfile) {
       const hasDockerignore = await context.fileExists('.dockerignore');

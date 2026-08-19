@@ -10,8 +10,9 @@ export function formatGitHubAnnotations(report: EngineReport): string {
     const colParam = res.column ? `col=${res.column}` : '';
     const titleParam = `title=[${res.ruleId}] ${res.ruleTitle}`;
 
-    const params = [fileParam, lineParam, colParam, titleParam].filter(Boolean).join(',');
-    lines.push(`::${command} ${params}::${res.message}${res.remediation ? ` (Fix: ${res.remediation})` : ''}`);
+    const paramList = [fileParam, lineParam, colParam, titleParam].filter(Boolean);
+    const paramStr = paramList.length > 0 ? ` ${paramList.join(',')}` : '';
+    lines.push(`::${command}${paramStr}::${res.message}${res.remediation ? ` (Fix: ${res.remediation})` : ''}`);
   }
 
   return lines.join('\n');

@@ -3,7 +3,7 @@ import { Rule, RuleResult } from '../../core/types.js';
 export const pkg002: Rule = {
   id: 'pkg-002',
   title: 'Multiple conflicting lockfiles detected in repository root',
-  description: 'Having multiple lockfiles (e.g. both package-lock.json and yarn.lock or pnpm-lock.yaml) causes confusion about which package manager is authoritative and leads to inconsistent dependency resolution in CI.',
+  description: 'Having multiple lockfiles from different package managers (e.g. both package-lock.json and yarn.lock or pnpm-lock.yaml) causes confusion about which package manager is authoritative and leads to inconsistent dependency resolution in CI.',
   category: 'package',
   defaultSeverity: 'error',
   fixable: false,
@@ -16,30 +16,34 @@ export const pkg002: Rule = {
   async check(context): Promise<RuleResult[]> {
     const results: RuleResult[] = [];
     const jsLockfiles = [
-      { file: 'package-lock.json', name: 'npm' },
-      { file: 'yarn.lock', name: 'yarn' },
-      { file: 'pnpm-lock.yaml', name: 'pnpm' },
-      { file: 'bun.lockb', name: 'bun' },
-      { file: 'bun.lock', name: 'bun' }
+      { file: 'package-lock.json', manager: 'npm' },
+      { file: 'yarn.lock', manager: 'yarn' },
+      { file: 'pnpm-lock.yaml', manager: 'pnpm' },
+      { file: 'bun.lockb', manager: 'bun' },
+      { file: 'bun.lock', manager: 'bun' }
     ];
 
     const presentLockfiles: string[] = [];
+    const managers = new Set<string>();
+
     for (const item of jsLockfiles) {
       if (await context.fileExists(item.file)) {
         presentLockfiles.push(item.file);
+        managers.add(item.manager);
       }
     }
 
-    if (presentLockfiles.length > 1) {
+    // Only flag if lockfiles belong to more than 1 distinct package manager
+    if (managers.size > 1) {
       results.push({
         ruleId: 'pkg-002',
         ruleTitle: pkg002.title,
         category: 'package',
         severity: 'error',
-        message: `Multiple conflicting package lockfiles found: ${presentLockfiles.join(', ')}`,
+        message: `Multiple conflicting package lockfiles found: ${presentLockfiles.join(', ')} (${Array.from(managers).join(' vs ')})`,
         fixable: false,
         remediation: `Choose one package manager and remove the redundant lockfile(s) (${presentLockfiles.join(', ')}).`,
-        details: { lockfiles: presentLockfiles }
+        details: { lockfiles: presentLockfiles, managers: Array.from(managers) }
       });
     }
 
