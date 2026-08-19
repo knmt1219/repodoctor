@@ -14,10 +14,14 @@ let totalFailed = 0;
 let totalPassed = 0;
 
 for (const file of files) {
+  console.log(`\n========================================`);
+  console.log(`▶ RUNNING SUITE: ${file}`);
+  console.log(`========================================`);
   const result = spawnSync(process.execPath, ['--test', ...coverageFlag, file], {
     stdio: 'inherit',
     shell: false
   });
+  console.log(`◀ FINISHED: ${file} (Exit code: ${result.status})\n`);
 
   if (result.status !== 0) {
     totalFailed++;
