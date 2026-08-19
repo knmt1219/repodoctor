@@ -4,10 +4,10 @@
 
 **Fast, zero-config Repository Health, Security & CI Linter for modern open-source projects.**
 
-[![CI](https://github.com/repodoctor/repodoctor/actions/workflows/ci.yml/badge.svg)](https://github.com/repodoctor/repodoctor/actions/workflows/ci.yml)
+[![CI](https://github.com/knmt1219/repodoctor/actions/workflows/ci.yml/badge.svg)](https://github.com/knmt1219/repodoctor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
-[![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen)](https://github.com/repodoctor/repodoctor)
+[![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen)](https://github.com/knmt1219/repodoctor)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 </div>
