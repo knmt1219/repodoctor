@@ -2,7 +2,7 @@
 
 # 🩺 RepoDoctor
 
-**Fast, zero-config Repository Health, Security & CI Linter for modern open-source projects.**
+**Zero-config Repository Health, Security & CI Linter for modern open-source projects.**
 
 [![CI](https://github.com/knmt1219/repodoctor/actions/workflows/ci.yml/badge.svg)](https://github.com/knmt1219/repodoctor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -51,13 +51,13 @@ As open-source repositories grow, they accumulate **hygiene decay, security vuln
 
 Existing linters are fragmented: ESLint only checks JavaScript ASTs, Flake8 only checks Python, and heavy commercial security scanners require SaaS signups, cloud tokens, or complex setups.
 
-**RepoDoctor** provides a single, instant, zero-config CLI tool that diagnoses **29 built-in** cross-ecosystem repository health rules, computes a deterministic **0-100 Repository Health Score (Grades A+ to F)**, auto-fixes common violations, and uploads standard **SARIF 2.1.0** reports directly to GitHub Code Scanning.
+**RepoDoctor** provides a single, zero-config CLI tool that diagnoses **29 built-in** cross-ecosystem repository health rules, computes a deterministic **0-100 Repository Health Score (Grades A+ to F)**, auto-fixes common violations, and generates standard **SARIF 2.1.0** reports for GitHub Code Scanning.
 
 ---
 
 ## Key Features
 
-- ⚡ **Fast & Deterministic**: Evaluates repositories locally with in-memory parsing caches and zero network calls.
+- ⚡ **Deterministic & Local-first**: Evaluates repositories locally with in-memory parsing caches without requiring network access.
 - 🔒 **Security & Supply-Chain Hardened**: Detects unpinned GitHub Actions, dangerous `pull_request_target` usage, plaintext tokens, missing `.gitignore` secret rules, and `curl | sh` pipes.
 - 📜 **OSS Standards Compliance**: Verifies LICENSE integrity, README completeness, CONTRIBUTING guides, CODE_OF_CONDUCT, and SECURITY.md policies.
 - 🚦 **CI/CD Best Practices**: Validates workflow `timeout-minutes`, PR concurrency cancellation groups, and multi-OS matrix configurations.
@@ -406,10 +406,10 @@ repodoctor check --format github
 
 ## Security Model
 
-1. **Static Analysis Only**: RepoDoctor treats all repository files strictly as **data**. It never executes dynamic shell commands or imports untrusted JavaScript/Python/Ruby files from analyzed repositories.
-2. **Offline & Air-Gapped**: RepoDoctor makes **zero network requests**. It operates entirely on local filesystem state.
-3. **Symlink Boundary Protection**: Safe file reading and writing strictly resolve paths inside the repository root boundary, refusing to write through or follow external symlinks.
-4. **Secret Redaction**: Detected credentials and tokens are redacted with asterisks before being passed to any reporter, preventing accidental leakage in CI logs.
+1. **Static Analysis**: RepoDoctor treats analyzed files as data. The engine performs static inspection without dynamically evaluating or importing target repository executable scripts.
+2. **Offline-First Design**: RepoDoctor is designed to operate locally on the filesystem without network access.
+3. **Path Boundary Protection**: Safe file reading and writing utilities verify paths against the repository root boundary to prevent unintended file access outside the target repository.
+4. **Secret Redaction**: Common API keys and tokens matching built-in patterns are masked before formatting in reports to help avoid accidental exposure in terminal output or CI logs.
 
 ---
 

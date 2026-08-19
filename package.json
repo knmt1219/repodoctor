@@ -1,7 +1,7 @@
 {
   "name": "repodoctor",
   "version": "0.1.0",
-  "description": "Fast, zero-config Repository Health, Security & CI Linter for modern open-source projects",
+  "description": "Zero-config Repository Health, Security & CI Linter for modern open-source projects",
   "keywords": [
     "linter",
     "repository-health",
