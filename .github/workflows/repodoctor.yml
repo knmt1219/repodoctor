@@ -10,8 +10,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
-  actions: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -41,10 +39,9 @@ jobs:
 
       - name: Run Diagnostics & Generate SARIF
         run: node ./bin/repodoctor.js check . --format sarif --output repodoctor-results.sarif
-        continue-on-error: true
 
-      - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@6bb034f26f1da0b37c6335a3983f3333bed7a2ff # v3.28.11
+      - name: Upload SARIF Artifact
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb99ba811e # v4.6.1
         with:
-          sarif_file: repodoctor-results.sarif
-        continue-on-error: true
+          name: repodoctor-sarif-report
+          path: repodoctor-results.sarif
