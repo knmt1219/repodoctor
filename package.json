@@ -43,8 +43,8 @@
     "build:watch": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "npm run typecheck",
-    "test": "npm run build && tsc -p tsconfig.test.json && node --test dist-test/tests/**/*.test.js",
-    "test:coverage": "npm run build && tsc -p tsconfig.test.json && node --test --experimental-test-coverage dist-test/tests/**/*.test.js",
+    "test": "npm run build && tsc -p tsconfig.test.json && node scripts/test-runner.js",
+    "test:coverage": "npm run build && tsc -p tsconfig.test.json && node scripts/test-runner.js --coverage",
     "doctor": "node ./bin/repodoctor.js check .",
     "doctor:fix": "node ./bin/repodoctor.js fix .",
     "prepublishOnly": "npm run build && npm run test"
