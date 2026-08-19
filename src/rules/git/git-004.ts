@@ -1,4 +1,7 @@
+import path from 'node:path';
+import fsp from 'node:fs/promises';
 import { Rule, RuleResult } from '../../core/types.js';
+import { dirExists, normalizePath } from '../../utils/fs.js';
 
 export const git004: Rule = {
   id: 'git-004',
@@ -15,21 +18,46 @@ export const git004: Rule = {
   },
   async check(context): Promise<RuleResult[]> {
     const results: RuleResult[] = [];
-    const files = await context.listFiles();
 
-    for (const filePath of files) {
-      if (filePath.includes('/.git/') || filePath.endsWith('/.git') || filePath.includes('\\.git\\')) {
-        results.push({
-          ruleId: 'git-004',
-          ruleTitle: git004.title,
-          category: 'git',
-          severity: 'error',
-          file: filePath,
-          message: `Nested .git path detected at "${filePath}"`,
-          fixable: false,
-          remediation: 'Remove nested .git folder or convert to a submodule.'
-        });
+    // Parse .gitmodules to know registered submodules
+    const registeredSubmodules = new Set<string>();
+    if (await context.fileExists('.gitmodules')) {
+      const gitmodules = await context.readFile('.gitmodules');
+      if (gitmodules) {
+        const pathMatches = gitmodules.matchAll(/^\s*path\s*=\s*(.+)$/gm);
+        for (const match of pathMatches) {
+          if (match[1]) {
+            registeredSubmodules.add(normalizePath(match[1].trim()));
+          }
+        }
       }
+    }
+
+    // Inspect direct subdirectories in rootDir
+    try {
+      const entries = await fsp.readdir(context.rootDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory() && entry.name !== '.git' && entry.name !== 'node_modules' && entry.name !== 'dist') {
+          const subDir = path.join(context.rootDir, entry.name);
+          const nestedGit = path.join(subDir, '.git');
+          const relSubDir = normalizePath(entry.name);
+
+          if ((await dirExists(nestedGit)) && !registeredSubmodules.has(relSubDir)) {
+            results.push({
+              ruleId: 'git-004',
+              ruleTitle: git004.title,
+              category: 'git',
+              severity: 'error',
+              file: `${relSubDir}/.git`,
+              message: `Unregistered nested .git directory detected in "${relSubDir}"`,
+              fixable: false,
+              remediation: `Remove "${relSubDir}/.git" or register it as a formal git submodule.`
+            });
+          }
+        }
+      }
+    } catch {
+      // Ignore directory read errors
     }
 
     return results;

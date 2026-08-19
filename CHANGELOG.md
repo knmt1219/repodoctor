@@ -30,15 +30,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SARIF v2.1.0 standard reporter for GitHub Code Scanning integration (`--format sarif`).
   - Formatted Markdown reporter for GitHub Step Summary and PR comments (`--format markdown`).
   - GitHub Workflow command annotations (`::error::`, `::warning::`).
+- **Security & Filesystem Hardening**:
+  - Strict path boundary validation (`isPathInside`) across all filesystem readers and writers to prevent path traversal.
+  - Symlink escape detection preventing reading or archiving host files outside repository boundaries.
+  - Stateless regular expression matching in secret scanner to eliminate regex `lastIndex` mutation across consecutive checks.
+  - Placeholder token filtering (`YOUR_API_KEY`, dummy tokens) to prevent false positives.
+  - File size and binary format guards in line scanners preventing high-memory overhead on large assets.
+- **Rule Improvements & False-Positive Reductions**:
+  - `git-003`: Integrates `.gitattributes` parser to respect configured Git LFS tracking rules (`filter=lfs`).
+  - `sec-001` & `sec-004`: Ignores commented lines in YAML workflows and package scripts.
+  - `pkg-001`: Expanded lockfile support for Python (`poetry.lock`, `Pipfile.lock`, `uv.lock`, `pdm.lock`) and Go (`go.sum`).
+  - `oss-008`: Accounts for `private: true` package manifests.
 - **Automated Fixers (`repodoctor fix`)**:
-  - Auto-scaffolds `.gitattributes`, missing `.gitignore` secret patterns, `SECURITY.md`, `.github/pull_request_template.md`, and `.dockerignore`.
-- **CLI Commands**:
-  - `repodoctor check [path]`: Run diagnostics with exit code policies (`--strict`, `--score-threshold`, `--max-warnings`).
-  - `repodoctor fix [path]`: Run automated remediation.
-  - `repodoctor init`: Generate `.repodoctor.yml` template.
-  - `repodoctor rules [category]`: Browse catalog with severity and descriptions.
-  - `repodoctor explain <rule-id>`: Deep dive documentation, rationale, bad/good code examples, and remediation steps.
+  - Strictly idempotent auto-remediation across multiple consecutive runs.
+  - Safe scaffolding for `.gitattributes`, `.gitignore` secrets, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md`, and `.dockerignore`.
 - **Testing & CI**:
-  - 100% genuine test suite with 75+ automated unit and integration tests.
-  - Over 90% test code coverage.
-  - GitHub Actions CI workflow for multi-OS validation and automated self-dogfooding.
+  - 94 automated tests across 22 test suites with 100% pass rate.
+  - Over 92% line coverage and 93% function coverage.
+  - Clean `tsconfig.json` build separation ensuring seamless `npx repodoctor` execution from npm packages.
+  - GitHub Actions CI workflow for multi-OS validation (Linux, Windows, macOS) and automated self-dogfooding.

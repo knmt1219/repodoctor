@@ -18,21 +18,24 @@ export const oss008: Rule = {
 
     // Check package.json if present
     if (await context.fileExists('package.json')) {
-      const pkg = await context.readJson<{ description?: string; repository?: unknown }>('package.json');
+      const pkg = await context.readJson<{ description?: string; repository?: unknown; private?: boolean }>('package.json');
       if (pkg) {
+        // If package is explicitly marked private, repository/description is less critical
+        const isPrivate = pkg.private === true;
+
         if (!pkg.description || pkg.description.trim().length === 0) {
           results.push({
             ruleId: 'oss-008',
             ruleTitle: oss008.title,
             category: 'oss',
-            severity: 'warn',
+            severity: isPrivate ? 'info' : 'warn',
             file: 'package.json',
             message: 'package.json is missing a "description" field',
             fixable: false,
             remediation: 'Add a "description" string in package.json explaining the package purpose.'
           });
         }
-        if (!pkg.repository) {
+        if (!pkg.repository && !isPrivate) {
           results.push({
             ruleId: 'oss-008',
             ruleTitle: oss008.title,

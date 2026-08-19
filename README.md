@@ -57,12 +57,12 @@ Existing linters are fragmented: ESLint only checks JavaScript ASTs, Flake8 only
 
 ## Key Features
 
-- ⚡ **Blazing Fast**: Evaluates an entire repository in under 50ms with zero network overhead.
+- ⚡ **Fast & Deterministic**: Evaluates repositories locally with in-memory parsing caches and zero network calls.
 - 🔒 **Security & Supply-Chain Hardened**: Detects unpinned GitHub Actions, dangerous `pull_request_target` usage, plaintext tokens, missing `.gitignore` secret rules, and `curl | sh` pipes.
 - 📜 **OSS Standards Compliance**: Verifies LICENSE integrity, README completeness, CONTRIBUTING guides, CODE_OF_CONDUCT, and SECURITY.md policies.
 - 🚦 **CI/CD Best Practices**: Validates workflow `timeout-minutes`, PR concurrency cancellation groups, and multi-OS matrix configurations.
-- 📦 **Package & Lockfile Hygiene**: Checks for missing lockfiles, multiple conflicting lockfiles (e.g. npm + yarn), and unconstrained wildcard `*` dependencies.
-- 🛠️ **One-Command Remediation (`repodoctor fix`)**: Automatically generates missing `.gitattributes`, `.gitignore` secret patterns, `SECURITY.md`, and PR templates.
+- 📦 **Package & Lockfile Hygiene**: Checks for missing lockfiles (npm, yarn, pnpm, cargo, poetry, uv, go), conflicting lockfiles, and unconstrained wildcard `*` dependencies.
+- 🛠️ **One-Command Remediation (`repodoctor fix`)**: Safely generates missing `.gitattributes`, `.gitignore` secret patterns, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, issue templates, and PR templates.
 - 📊 **Multi-Format Reporting**: Supports Terminal ANSI tables, JSON, Markdown, GitHub workflow annotations (`::error::`), and OASIS SARIF v2.1.0 for GitHub Security tab integration.
 - 🎛️ **Extensible & Configurable**: Zero-config by default, with optional `.repodoctor.yml` for custom rules, severity overrides, and score thresholds.
 

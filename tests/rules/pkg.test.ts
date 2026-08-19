@@ -25,6 +25,37 @@ describe('Package & Dependency Hygiene Rules (pkg-001 to pkg-004)', () => {
     assert.equal(res.length, 0);
   });
 
+  it('pkg-001: should check pyproject.toml for poetry.lock or uv.lock', async () => {
+    const ctxMissing = createMockContext({
+      'pyproject.toml': '[project]\nname = "my-app"\n'
+    });
+    const res1 = await pkg001.check(ctxMissing);
+    assert.equal(res1.length, 1);
+    assert.ok(res1[0]?.message.includes('pyproject.toml'));
+
+    const ctxPass = createMockContext({
+      'pyproject.toml': '[project]\nname = "my-app"\n',
+      'poetry.lock': '# poetry lockfile\n'
+    });
+    const res2 = await pkg001.check(ctxPass);
+    assert.equal(res2.length, 0);
+  });
+
+  it('pkg-001: should check go.mod for go.sum', async () => {
+    const ctxMissing = createMockContext({
+      'go.mod': 'module github.com/example/app\ngo 1.22\n'
+    });
+    const res1 = await pkg001.check(ctxMissing);
+    assert.equal(res1.length, 1);
+
+    const ctxPass = createMockContext({
+      'go.mod': 'module github.com/example/app\ngo 1.22\n',
+      'go.sum': 'github.com/stretchr/testify v1.8.4 ...\n'
+    });
+    const res2 = await pkg001.check(ctxPass);
+    assert.equal(res2.length, 0);
+  });
+
   it('pkg-002: should flag multiple conflicting lockfiles', async () => {
     const ctx = createMockContext({
       'package.json': JSON.stringify({ name: 'pkg' }),

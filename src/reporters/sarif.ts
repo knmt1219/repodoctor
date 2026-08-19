@@ -1,40 +1,47 @@
 import { EngineReport } from '../core/types.js';
 import { ALL_RULES } from '../rules/index.js';
+import { normalizePath } from '../utils/fs.js';
 
 export function formatSarifReport(report: EngineReport): string {
-  const sarifRules = ALL_RULES.map(rule => ({
-    id: rule.id,
-    name: rule.id.replace(/-/g, '_'),
-    shortDescription: {
-      text: rule.title
-    },
-    fullDescription: {
-      text: rule.description
-    },
-    help: {
-      text: `${rule.docs.whyItMatters}\n\nRemediation:\n${rule.docs.remediationGuide}`,
-      markdown: `### Why it matters\n${rule.docs.whyItMatters}\n\n### Remediation\n${rule.docs.remediationGuide}`
-    },
-    properties: {
-      category: rule.category,
-      defaultSeverity: rule.defaultSeverity
-    }
-  }));
+  const ruleIndexMap = new Map<string, number>();
+
+  const sarifRules = ALL_RULES.map((rule, idx) => {
+    ruleIndexMap.set(rule.id, idx);
+    return {
+      id: rule.id,
+      name: rule.id.replace(/-/g, '_'),
+      shortDescription: {
+        text: rule.title
+      },
+      fullDescription: {
+        text: rule.description
+      },
+      help: {
+        text: `${rule.docs.whyItMatters}\n\nRemediation:\n${rule.docs.remediationGuide}`,
+        markdown: `### Why it matters\n${rule.docs.whyItMatters}\n\n### Remediation\n${rule.docs.remediationGuide}`
+      },
+      properties: {
+        category: rule.category,
+        defaultSeverity: rule.defaultSeverity
+      }
+    };
+  });
 
   const sarifResults = report.results.map(res => {
     const level = res.severity === 'error' ? 'error' : res.severity === 'warn' ? 'warning' : 'note';
+    const ruleIndex = ruleIndexMap.get(res.ruleId);
 
     const locations = res.file
       ? [
           {
             physicalLocation: {
               artifactLocation: {
-                uri: res.file,
+                uri: normalizePath(res.file),
                 uriBaseId: '%SRCROOT%'
               },
               region: {
-                startLine: res.line || 1,
-                startColumn: res.column || 1
+                startLine: Math.max(1, res.line || 1),
+                startColumn: Math.max(1, res.column || 1)
               }
             }
           }
@@ -43,6 +50,7 @@ export function formatSarifReport(report: EngineReport): string {
 
     return {
       ruleId: res.ruleId,
+      ruleIndex: ruleIndex !== undefined ? ruleIndex : -1,
       level,
       message: {
         text: res.message
@@ -60,7 +68,7 @@ export function formatSarifReport(report: EngineReport): string {
           driver: {
             name: 'RepoDoctor',
             version: report.version,
-            informationUri: 'https://github.com/repodoctor/repodoctor',
+            informationUri: 'https://github.com/knmt1219/repodoctor',
             rules: sarifRules
           }
         },

@@ -7,7 +7,7 @@ export const sec002: Rule = {
   description: 'Workflows without explicit `permissions:` block inherit default repository token permissions which may include broad write access. Explicitly declare `permissions: read-all` or job-level permissions.',
   category: 'security',
   defaultSeverity: 'warn',
-  fixable: true,
+  fixable: false,
   docs: {
     whyItMatters: 'By default, GITHUB_TOKEN in workflows might have write access to issues, pull requests, contents, or packages. If a compromised dependency runs during CI, it could abuse write permissions. Following the principle of least privilege limits blast radius.',
     badExample: 'name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps: [...]',
@@ -50,7 +50,7 @@ export const sec002: Rule = {
           line: 1,
           column: 1,
           message: `Workflow "${filePath}" does not declare top-level or job-level 'permissions:' block`,
-          fixable: true,
+          fixable: false,
           remediation: 'Add `permissions: read-all` or specific granular permissions at the top of the workflow'
         });
       }

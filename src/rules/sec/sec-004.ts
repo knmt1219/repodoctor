@@ -1,5 +1,5 @@
 import { Rule, RuleResult } from '../../core/types.js';
-import { findLineAndColumn } from '../../utils/parsers.js';
+import { parseLines } from '../../utils/parsers.js';
 
 const PIPE_EXEC_REGEX = /(?:curl|wget)\s+[^\n|;]+\|\s*(?:ba)?sh/i;
 
@@ -26,20 +26,27 @@ export const sec004: Rule = {
       const content = await context.readFile(filePath);
       if (!content) continue;
 
-      if (PIPE_EXEC_REGEX.test(content)) {
-        const loc = findLineAndColumn(content, PIPE_EXEC_REGEX);
-        results.push({
-          ruleId: 'sec-004',
-          ruleTitle: sec004.title,
-          category: 'security',
-          severity: 'error',
-          file: filePath,
-          line: loc?.line,
-          column: loc?.column,
-          message: `Insecure remote script pipe-to-shell detected in workflow "${filePath}"`,
-          fixable: false,
-          remediation: 'Download the file first, verify its hash/signature, and execute locally.'
-        });
+      const lines = parseLines(content);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!;
+        const trimmed = line.trim();
+        if (trimmed.startsWith('#')) continue;
+
+        if (PIPE_EXEC_REGEX.test(line)) {
+          results.push({
+            ruleId: 'sec-004',
+            ruleTitle: sec004.title,
+            category: 'security',
+            severity: 'error',
+            file: filePath,
+            line: i + 1,
+            column: 1,
+            message: `Insecure remote script pipe-to-shell detected in workflow "${filePath}"`,
+            fixable: false,
+            remediation: 'Download the file first, verify its hash/signature, and execute locally.'
+          });
+          break;
+        }
       }
     }
 
@@ -48,16 +55,14 @@ export const sec004: Rule = {
     if (pkg && pkg.scripts) {
       for (const [scriptName, scriptCmd] of Object.entries(pkg.scripts)) {
         if (typeof scriptCmd === 'string' && PIPE_EXEC_REGEX.test(scriptCmd)) {
-          const content = (await context.readFile('package.json')) || '';
-          const loc = findLineAndColumn(content, scriptName);
           results.push({
             ruleId: 'sec-004',
             ruleTitle: sec004.title,
             category: 'security',
             severity: 'error',
             file: 'package.json',
-            line: loc?.line,
-            column: loc?.column,
+            line: 1,
+            column: 1,
             message: `Insecure remote script pipe-to-shell detected in package.json script "${scriptName}"`,
             fixable: false,
             remediation: 'Remove pipe-to-shell from package script; use a locked dependency or checked-in script.'

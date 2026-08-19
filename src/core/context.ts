@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { dirExists, fileExists, normalizePath, readFileSafe, scanDirectory } from '../utils/fs.js';
+import { dirExists, fileExists, isPathInside, normalizePath, readFileSafe, scanDirectory } from '../utils/fs.js';
 import { parseJsonSafe, parseYamlSafe } from '../utils/parsers.js';
 import { detectGitInfo } from '../utils/git.js';
 import { RuleContext } from './types.js';
@@ -39,18 +39,24 @@ export async function createRuleContext(options: ContextOptions): Promise<RuleCo
     fileExists: async (relPath: string): Promise<boolean> => {
       const normalized = normalizePath(relPath);
       if (fileSet.has(normalized)) return true;
-      return await fileExists(path.join(rootDir, relPath));
+      const fullPath = path.resolve(rootDir, relPath);
+      if (!isPathInside(rootDir, fullPath)) return false;
+      return await fileExists(fullPath);
     },
 
     dirExists: async (relPath: string): Promise<boolean> => {
-      return await dirExists(path.join(rootDir, relPath));
+      const fullPath = path.resolve(rootDir, relPath);
+      if (!isPathInside(rootDir, fullPath)) return false;
+      return await dirExists(fullPath);
     },
 
     readFile: async (relPath: string): Promise<string | null> => {
       const normalized = normalizePath(relPath);
+      const fullPath = path.resolve(rootDir, relPath);
+      if (!isPathInside(rootDir, fullPath)) return null;
+
       if (!textCache.has(normalized)) {
-        const fullPath = path.join(rootDir, relPath);
-        textCache.set(normalized, readFileSafe(fullPath));
+        textCache.set(normalized, readFileSafe(fullPath, 10 * 1024 * 1024, rootDir));
       }
       return textCache.get(normalized)!;
     },
@@ -89,16 +95,19 @@ export async function createRuleContext(options: ContextOptions): Promise<RuleCo
 
     listFiles: async (pattern?: string): Promise<string[]> => {
       if (!pattern) return [...files];
-      // Simple glob/contains filter
-      if (pattern.startsWith('*.')) {
-        const ext = pattern.slice(1);
-        return files.filter(f => f.endsWith(ext));
-      }
-      if (pattern.includes('*')) {
-        const regex = new RegExp('^' + pattern.replace(/\./g, '\\.').replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*') + '$');
+      const normalizedPattern = normalizePath(pattern);
+
+      if (normalizedPattern.includes('*') || normalizedPattern.includes('?')) {
+        const escaped = normalizedPattern
+          .replace(/[-/\\^$+.( )|[\]{}]/g, '\\$&')
+          .replace(/\*\*/g, '.*')
+          .replace(/\*/g, '[^/]*')
+          .replace(/\?/g, '.');
+        const regex = new RegExp('^' + escaped + '$', 'i');
         return files.filter(f => regex.test(f));
       }
-      return files.filter(f => f === pattern || f.endsWith('/' + pattern));
+
+      return files.filter(f => f === normalizedPattern || f.endsWith('/' + normalizedPattern));
     }
   };
 

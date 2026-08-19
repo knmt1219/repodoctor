@@ -12,11 +12,14 @@ describe('Secret Redaction & Detection', () => {
     assert.ok(!redacted.includes('1234567890'));
   });
 
-  it('should detect classic GitHub Personal Access Tokens', () => {
+  it('should detect classic GitHub Personal Access Tokens deterministically across consecutive runs', () => {
     const dummyClassic = 'ghp_' + 'A'.repeat(36);
-    const result = containsSecretPattern(`export GITHUB_TOKEN="${dummyClassic}"`);
-    assert.equal(result.match, true);
-    assert.equal(result.patternName, 'GitHub Personal Access Token (classic)');
+    // Call multiple times to verify no stateful lastIndex bug
+    for (let i = 0; i < 5; i++) {
+      const result = containsSecretPattern(`export GITHUB_TOKEN="${dummyClassic}"`);
+      assert.equal(result.match, true, `Failed on iteration ${i}`);
+      assert.equal(result.patternName, 'GitHub Personal Access Token (classic)');
+    }
   });
 
   it('should detect private key headers', () => {
@@ -27,11 +30,19 @@ describe('Secret Redaction & Detection', () => {
   });
 
   it('should detect OpenAI API key patterns', () => {
-    const dummyKey = 'sk-proj-' + 'B'.repeat(36);
+    const dummyKey = 'sk-proj-7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b';
     const text = `const key = "${dummyKey}";`;
     const result = containsSecretPattern(text);
     assert.equal(result.match, true);
     assert.equal(result.patternName, 'OpenAI API Key');
+  });
+
+  it('should ignore obvious placeholders without false positives', () => {
+    const text1 = 'const key = "YOUR_API_KEY_HERE_REPLACE_ME";';
+    assert.equal(containsSecretPattern(text1).match, false);
+
+    const text2 = 'const key = "sk-placeholder-example-key-12345678";';
+    assert.equal(containsSecretPattern(text2).match, false);
   });
 
   it('should not false positive on normal code', () => {

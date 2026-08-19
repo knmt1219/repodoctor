@@ -6,6 +6,19 @@ export function normalizePath(p: string): string {
   return p.replace(/\\/g, '/');
 }
 
+/**
+ * Checks if targetPath is strictly inside or equal to rootDir, preventing path traversal attacks.
+ */
+export function isPathInside(rootDir: string, targetPath: string): boolean {
+  const resolvedRoot = path.resolve(rootDir);
+  const resolvedTarget = path.resolve(targetPath);
+
+  // Equal path or child path
+  if (resolvedRoot === resolvedTarget) return true;
+  const rel = path.relative(resolvedRoot, resolvedTarget);
+  return !rel.startsWith('..') && !path.isAbsolute(rel);
+}
+
 export async function fileExists(filePath: string): Promise<boolean> {
   try {
     const stat = await fsp.stat(filePath);
@@ -24,21 +37,56 @@ export async function dirExists(dirPath: string): Promise<boolean> {
   }
 }
 
-export async function readFileSafe(filePath: string, maxBytes = 10 * 1024 * 1024): Promise<string | null> {
+export async function isSymlink(filePath: string): Promise<boolean> {
   try {
-    const stat = await fsp.stat(filePath);
-    if (!stat.isFile() || stat.size > maxBytes) {
+    const lstat = await fsp.lstat(filePath);
+    return lstat.isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+export async function readFileSafe(filePath: string, maxBytes = 10 * 1024 * 1024, rootBoundary?: string): Promise<string | null> {
+  try {
+    // If a root boundary is provided, ensure path does not escape
+    if (rootBoundary && !isPathInside(rootBoundary, filePath)) {
       return null;
     }
+
+    // Check lstat to prevent following malicious external symlinks
+    const lstat = await fsp.lstat(filePath);
+    if (lstat.isSymbolicLink()) {
+      const real = await fsp.realpath(filePath);
+      if (rootBoundary && !isPathInside(rootBoundary, real)) {
+        return null;
+      }
+    }
+
+    if (!lstat.isFile() && !lstat.isSymbolicLink()) {
+      return null;
+    }
+
+    if (lstat.size > maxBytes) {
+      return null;
+    }
+
     return await fsp.readFile(filePath, 'utf-8');
   } catch {
     return null;
   }
 }
 
-export async function writeFileSafe(filePath: string, content: string): Promise<boolean> {
+export async function writeFileSafe(filePath: string, content: string, rootBoundary?: string): Promise<boolean> {
   try {
+    if (rootBoundary && !isPathInside(rootBoundary, filePath)) {
+      return false;
+    }
+
     const dir = path.dirname(filePath);
+    if (rootBoundary && !isPathInside(rootBoundary, dir)) {
+      return false;
+    }
+
     await fsp.mkdir(dir, { recursive: true });
     await fsp.writeFile(filePath, content, 'utf-8');
     return true;
@@ -57,6 +105,7 @@ export async function scanDirectory(
       '**/node_modules/**',
       '**/.git/**',
       '**/dist/**',
+      '**/dist-test/**',
       '**/build/**',
       '**/coverage/**',
       '**/.next/**',

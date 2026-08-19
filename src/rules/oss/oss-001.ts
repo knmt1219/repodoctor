@@ -15,7 +15,7 @@ export const oss001: Rule = {
   description: 'Without an explicit open source license (such as MIT, Apache-2.0, or BSD), code defaults to exclusive copyright and cannot be safely used or contributed to by the community.',
   category: 'oss',
   defaultSeverity: 'error',
-  fixable: true,
+  fixable: false,
   docs: {
     whyItMatters: 'A missing license creates legal ambiguity. Developers and organizations cannot adopt or contribute to the project without clear licensing permissions.',
     badExample: 'Repository has no LICENSE file.',
@@ -47,7 +47,7 @@ export const oss001: Rule = {
         category: 'oss',
         severity: 'error',
         message: 'No LICENSE file found in repository root',
-        fixable: true,
+        fixable: false,
         remediation: 'Create a LICENSE file (e.g., MIT or Apache-2.0) in the root directory.'
       });
     } else if (empty) {
@@ -58,7 +58,7 @@ export const oss001: Rule = {
         severity: 'error',
         file: foundPath,
         message: `License file "${foundPath}" is empty or too short`,
-        fixable: true,
+        fixable: false,
         remediation: 'Fill in the full text of your chosen license (including year and copyright holder).'
       });
     }

@@ -6,7 +6,7 @@ export const ci002: Rule = {
   description: 'Workflows triggered on pull requests should define `concurrency` with `cancel-in-progress: true` to automatically cancel redundant older builds when a new commit is pushed to the PR branch.',
   category: 'ci',
   defaultSeverity: 'warn',
-  fixable: true,
+  fixable: false,
   docs: {
     whyItMatters: 'Pushing rapid commits to an open pull request queues multiple full CI runs. Without concurrency cancellation, your CI backlog swells and consumes unnecessary runner bandwidth.',
     badExample: 'on: [pull_request]\njobs:\n  ...',
@@ -44,7 +44,7 @@ export const ci002: Rule = {
             severity: 'warn',
             file: filePath,
             message: `Workflow "${filePath}" triggers on pull_request but does not configure 'concurrency' cancellation`,
-            fixable: true,
+            fixable: false,
             remediation: 'Add `concurrency: { group: "${{ github.workflow }}-${{ github.ref }}", cancel-in-progress: true }`'
           });
         }

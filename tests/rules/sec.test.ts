@@ -20,6 +20,14 @@ describe('Security Rules (sec-001 to sec-006)', () => {
       assert.ok(res[0]?.message.includes('actions/checkout@v4'));
     });
 
+    it('should ignore commented out uses lines', async () => {
+      const ctx = createMockContext({
+        '.github/workflows/ci.yml': 'name: CI\n# - uses: actions/checkout@v4\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683\n'
+      });
+      const res = await sec001.check(ctx);
+      assert.equal(res.length, 0);
+    });
+
     it('should pass 40-char commit SHA pins', async () => {
       const ctx = createMockContext({
         '.github/workflows/ci.yml': 'name: CI\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2\n'
@@ -91,6 +99,14 @@ describe('Security Rules (sec-001 to sec-006)', () => {
       assert.equal(res[0]?.ruleId, 'sec-004');
     });
 
+    it('should ignore commented curl pipe to sh', async () => {
+      const ctx = createMockContext({
+        '.github/workflows/ci.yml': 'name: CI\njobs:\n  setup:\n    steps:\n      # - run: curl https://example.com | sh\n      - run: echo ok\n'
+      });
+      const res = await sec004.check(ctx);
+      assert.equal(res.length, 0);
+    });
+
     it('should flag curl pipe to bash in package.json scripts', async () => {
       const ctx = createMockContext({
         'package.json': JSON.stringify({
@@ -106,7 +122,7 @@ describe('Security Rules (sec-001 to sec-006)', () => {
 
   describe('sec-005: Hardcoded Secrets', () => {
     it('should flag hardcoded OpenAI API key in source', async () => {
-      const dummyKey = 'sk-proj-' + '9'.repeat(36);
+      const dummyKey = 'sk-proj-7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b';
       const ctx = createMockContext({
         'src/config.ts': `const key = "${dummyKey}";\nexport default key;\n`
       });

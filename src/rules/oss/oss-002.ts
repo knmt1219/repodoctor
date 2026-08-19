@@ -6,7 +6,7 @@ export const oss002: Rule = {
   description: 'README is the landing page of any open source repository. It should include the project name, description, installation, and usage instructions.',
   category: 'oss',
   defaultSeverity: 'warn',
-  fixable: true,
+  fixable: false,
   docs: {
     whyItMatters: 'A missing or empty README prevents developers from understanding what the project does, how to install it, or how to run it.',
     badExample: '# My Project (empty)',
@@ -34,7 +34,7 @@ export const oss002: Rule = {
         category: 'oss',
         severity: 'warn',
         message: 'Missing README.md file in repository root',
-        fixable: true,
+        fixable: false,
         remediation: 'Create a README.md file introducing your project.'
       });
       return results;

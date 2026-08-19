@@ -1,5 +1,5 @@
 import { Rule, RuleResult } from '../../core/types.js';
-import { findLineAndColumn } from '../../utils/parsers.js';
+import { findLineAndColumn, parseLines } from '../../utils/parsers.js';
 
 export const sec001: Rule = {
   id: 'sec-001',
@@ -24,31 +24,38 @@ export const sec001: Rule = {
       const content = await context.readFile(filePath);
       if (!content) continue;
 
-      // Regex matching `uses: <org>/<repo>(/path)?@<ref>`
-      const usesRegex = /uses:\s*([a-zA-Z0-9_\-./]+)@([^\s#\r\n]+)/g;
-      let match: RegExpExecArray | null;
+      const lines = parseLines(content);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!;
+        const trimmed = line.trim();
 
-      while ((match = usesRegex.exec(content)) !== null) {
-        const fullAction = match[1]!;
-        const ref = match[2]!;
+        // Skip comments
+        if (trimmed.startsWith('#')) continue;
 
-        // Skip local actions e.g. `./.github/actions/foo` or `docker://`
+        // Match `uses: <action>@<ref>`
+        const usesMatch = /uses:\s*([a-zA-Z0-9_\-./]+)@([^\s#\r\n]+)/.exec(line);
+        if (!usesMatch) continue;
+
+        const fullAction = usesMatch[1]!;
+        const ref = usesMatch[2]!;
+
+        // Skip local actions (./) or docker actions (docker://)
         if (fullAction.startsWith('./') || fullAction.startsWith('docker://')) {
           continue;
         }
 
-        // Check if ref is a 40-char hex commit SHA
+        // Check if ref is 40-char hex commit SHA
         const isCommitSha = /^[0-9a-f]{40}$/i.test(ref);
         if (!isCommitSha) {
-          const loc = findLineAndColumn(content, match[0]);
+          const loc = findLineAndColumn(content, usesMatch[0]);
           results.push({
             ruleId: 'sec-001',
             ruleTitle: sec001.title,
             category: 'security',
             severity: 'error',
             file: filePath,
-            line: loc?.line,
-            column: loc?.column,
+            line: loc?.line ?? (i + 1),
+            column: loc?.column ?? 1,
             message: `GitHub Action "${fullAction}@${ref}" is not pinned to a commit SHA`,
             fixable: false,
             remediation: `Pin "${fullAction}" to its 40-character commit SHA (e.g., uses: ${fullAction}@<commit-sha> # ${ref})`,

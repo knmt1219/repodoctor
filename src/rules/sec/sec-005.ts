@@ -1,6 +1,14 @@
+import path from 'node:path';
 import { Rule, RuleResult } from '../../core/types.js';
 import { containsSecretPattern } from '../../utils/redact.js';
 import { parseLines } from '../../utils/parsers.js';
+import { getFileSize } from '../../utils/fs.js';
+
+const SKIP_EXTENSIONS = new Set([
+  '.lock', '.lockb', '.min.js', '.min.css', '.map',
+  '.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.zip', '.tar', '.gz',
+  '.exe', '.dll', '.so', '.dylib', '.bin', '.parquet', '.db', '.sqlite'
+]);
 
 export const sec005: Rule = {
   id: 'sec-005',
@@ -20,15 +28,22 @@ export const sec005: Rule = {
     const files = await context.listFiles();
 
     for (const filePath of files) {
-      // Skip test fixtures, lockfiles, minified files, or repodoctor rule files themselves
+      // Skip test fixtures, lockfiles, minified files, binary extensions, or repodoctor rule files themselves
+      const ext = path.extname(filePath).toLowerCase();
       if (
+        SKIP_EXTENSIONS.has(ext) ||
         filePath.includes('test') ||
         filePath.includes('fixture') ||
-        filePath.endsWith('.lock') ||
-        filePath.endsWith('.lockb') ||
         filePath.endsWith('redact.ts') ||
         filePath.endsWith('sec-005.ts')
       ) {
+        continue;
+      }
+
+      const fullPath = path.resolve(context.rootDir, filePath);
+      const size = await getFileSize(fullPath);
+      if (size > 1024 * 1024) {
+        // Skip files > 1MB from line-by-line regex scanning
         continue;
       }
 
