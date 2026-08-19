@@ -10,8 +10,8 @@ export function createCli(): Command {
 
   program
     .name('repodoctor')
-    .description('Fast, zero-config Repository Health, Security & CI Linter for modern open-source projects')
-    .version('0.1.0');
+    .description('Zero-config Repository Health, Security & CI Linter for modern open-source projects')
+    .version('0.1.1');
 
   program
     .command('check', { isDefault: true })

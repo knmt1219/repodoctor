@@ -5,6 +5,13 @@ All notable changes to **RepoDoctor** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-20
+
+### Fixed
+- **Cross-Platform Test Execution**: Introduced a dedicated sequential test runner script (`scripts/test-runner.js`) ensuring resilient execution and detailed per-suite diagnostic reports across Windows, macOS, and Linux runners.
+- **Safe Filesystem Boundaries**: Enhanced `writeFileSafe` path resolution in `src/utils/fs.ts` to support environments with symlinked root directories (such as macOS `/var` -> `/private/var`) and Windows 8.3 short paths while maintaining strict physical containment.
+- **CI Workflows & Artifacts**: Updated `RepoDoctor Security & Health Scan` workflow permissions and pinned `actions/upload-artifact` to verified release commit SHA for consistent SARIF report storage.
+
 ## [0.1.0] - 2026-08-19
 
 ### Added
