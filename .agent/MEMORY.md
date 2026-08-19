@@ -26,4 +26,4 @@
 - **Quy ước sau khi làm xong task**: Luôn in đường dẫn repository GitHub và đồng bộ commit/push lên GitHub.
 
 ## 4. Nhật ký công việc gần nhất (Recent Logs)
-- [2026-08-20]: Khởi tạo và thiết lập 2 skills `print-repo-link`, `persistent-memory` cùng file `.agent/MEMORY.md`.
+- [2026-08-20]: Khởi tạo và thiết lập các skills `print-repo-link`, `persistent-memory`, `verifiable-testing` cùng file `.agent/MEMORY.md`.
