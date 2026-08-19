@@ -54,16 +54,59 @@ describe('Git & Repository Hygiene Rules', () => {
     }
   });
 
-  it('git-004: should detect nested .git directories in subfolders', async () => {
+  it('git-003: should flag binary exceeding custom maxBinarySizeKb', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-bin-custom-'));
+    try {
+      const binFile = path.join(tmpDir, 'sample.bin');
+      const buffer = Buffer.alloc(600 * 1024); // 600 KB
+      await fsp.writeFile(binFile, buffer);
+
+      // Default threshold is 1024KB -> should not flag
+      const ctxDefault = await createRuleContext({ rootDir: tmpDir });
+      const resDefault = await git003.check(ctxDefault);
+      assert.equal(resDefault.length, 0);
+
+      // Custom threshold 500KB -> should flag
+      const ctxCustom = await createRuleContext({
+        rootDir: tmpDir,
+        config: { maxBinarySizeKb: 500 }
+      });
+      const resCustom = await git003.check(ctxCustom);
+      assert.equal(resCustom.length, 1);
+      assert.equal(resCustom[0]?.ruleId, 'git-003');
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('git-004: should detect deep nested .git directories in subfolders', async () => {
     const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-nested-git-'));
     try {
-      const nestedGit = path.join(tmpDir, 'subpackage', '.git');
-      await fsp.mkdir(nestedGit, { recursive: true });
+      const deepNestedGit = path.join(tmpDir, 'packages', 'core', 'subpkg', '.git');
+      await fsp.mkdir(deepNestedGit, { recursive: true });
 
       const ctx = await createRuleContext({ rootDir: tmpDir });
       const res = await git004.check(ctx);
       assert.equal(res.length, 1);
       assert.equal(res[0]?.ruleId, 'git-004');
+      assert.ok(res[0]?.file && res[0].file.includes('packages/core/subpkg'));
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('git-004: should allow registered submodules in .gitmodules', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-submod-'));
+    try {
+      const gitmodulesPath = path.join(tmpDir, '.gitmodules');
+      await fsp.writeFile(gitmodulesPath, '[submodule "vendor/lib"]\n\tpath = vendor/lib\n\turl = https://example.com/lib.git\n');
+
+      const submoduleGit = path.join(tmpDir, 'vendor', 'lib', '.git');
+      await fsp.mkdir(submoduleGit, { recursive: true });
+
+      const ctx = await createRuleContext({ rootDir: tmpDir });
+      const res = await git004.check(ctx);
+      assert.equal(res.length, 0); // Registered submodule is allowed!
     } finally {
       await fsp.rm(tmpDir, { recursive: true, force: true });
     }
@@ -73,14 +116,42 @@ describe('Git & Repository Hygiene Rules', () => {
     const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-symlink-'));
     try {
       const symlinkPath = path.join(tmpDir, 'escape_link.txt');
+      let symlinkCreated = false;
       try {
         await fsp.symlink('../../../etc/passwd', symlinkPath);
+        symlinkCreated = true;
+      } catch {
+        // Windows without developer mode / admin may restrict symlink creation
+      }
+
+      if (symlinkCreated) {
         const ctx = await createRuleContext({ rootDir: tmpDir });
         const res = await git005.check(ctx);
         assert.ok(res.length >= 1);
         assert.ok(res.some(r => r.ruleId === 'git-005' && r.message.includes('escapes repository root')));
+      }
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('git-005: should detect broken symlinks pointing to non-existent local targets', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-broken-symlink-'));
+    try {
+      const brokenLink = path.join(tmpDir, 'broken_link.txt');
+      let symlinkCreated = false;
+      try {
+        await fsp.symlink('non_existent_target.txt', brokenLink);
+        symlinkCreated = true;
       } catch {
-        // Windows without developer mode / admin may restrict symlink creation
+        // Windows symlink permissions
+      }
+
+      if (symlinkCreated) {
+        const ctx = await createRuleContext({ rootDir: tmpDir });
+        const res = await git005.check(ctx);
+        assert.ok(res.length >= 1);
+        assert.ok(res.some(r => r.ruleId === 'git-005' && r.message.includes('Broken symbolic link')));
       }
     } finally {
       await fsp.rm(tmpDir, { recursive: true, force: true });

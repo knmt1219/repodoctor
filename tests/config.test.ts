@@ -53,6 +53,48 @@ describe('Config Loader & Resolver', () => {
     assert.equal(resolved.categorySettings.get('git'), true);
   });
 
+  it('should throw descriptive error for invalid severity', () => {
+    assert.throws(
+      () => {
+        resolveConfig({
+          rules: {
+            // @ts-expect-error testing invalid severity
+            'sec-001': 'invalid-severity'
+          }
+        });
+      },
+      {
+        message: /unknown severity "invalid-severity"/
+      }
+    );
+  });
+
+  it('should throw descriptive error for invalid scoreThreshold', () => {
+    assert.throws(
+      () => {
+        resolveConfig({
+          scoreThreshold: 150
+        });
+      },
+      {
+        message: /scoreThreshold must be a number between 0 and 100/
+      }
+    );
+  });
+
+  it('should throw descriptive error for invalid maxWarnings', () => {
+    assert.throws(
+      () => {
+        resolveConfig({
+          maxWarnings: -5
+        });
+      },
+      {
+        message: /maxWarnings must be an integer >= -1/
+      }
+    );
+  });
+
   it('should load config from a YAML file', async () => {
     const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-cfg-yaml-'));
     try {

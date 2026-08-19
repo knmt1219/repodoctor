@@ -104,4 +104,22 @@ describe('Package & Dependency Hygiene Rules (pkg-001 to pkg-004)', () => {
     assert.equal(res.length, 1);
     assert.equal(res[0]?.ruleId, 'pkg-004');
   });
+
+  it('pkg-004: should check custom requiredScripts from config', async () => {
+    const ctx = createMockContext({
+      'package.json': JSON.stringify({
+        name: 'pkg',
+        scripts: {
+          test: 'node --test',
+          build: 'tsc'
+        }
+      })
+    });
+    // Add requiredScripts: ['test', 'build', 'lint']
+    ctx.options.config = { requiredScripts: ['test', 'build', 'lint'] };
+
+    const res = await pkg004.check(ctx);
+    assert.equal(res.length, 1);
+    assert.ok(res[0]?.message.includes('lint'));
+  });
 });

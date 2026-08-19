@@ -15,6 +15,9 @@ const CONFIG_FILENAMES = [
   '.repodoctorrc.yml'
 ];
 
+const VALID_SEVERITIES = new Set<string>(['error', 'warn', 'info', 'off']);
+const VALID_CATEGORIES = new Set<string>(['security', 'oss', 'ci', 'package', 'git', 'docker']);
+
 export async function findConfigFile(rootDir: string): Promise<string | null> {
   for (const filename of CONFIG_FILENAMES) {
     const fullPath = path.join(rootDir, filename);
@@ -83,14 +86,39 @@ async function parseConfigFile(filePath: string): Promise<RepoDoctorConfig> {
 }
 
 export function resolveConfig(userConfig: RepoDoctorConfig): ResolvedConfig {
+  // Validate scoreThreshold
+  if (userConfig.scoreThreshold !== undefined) {
+    if (typeof userConfig.scoreThreshold !== 'number' || isNaN(userConfig.scoreThreshold) || userConfig.scoreThreshold < 0 || userConfig.scoreThreshold > 100) {
+      throw new Error(`Invalid configuration: scoreThreshold must be a number between 0 and 100 (received ${userConfig.scoreThreshold})`);
+    }
+  }
+
+  // Validate maxWarnings
+  if (userConfig.maxWarnings !== undefined) {
+    if (typeof userConfig.maxWarnings !== 'number' || isNaN(userConfig.maxWarnings) || userConfig.maxWarnings < -1) {
+      throw new Error(`Invalid configuration: maxWarnings must be an integer >= -1 (received ${userConfig.maxWarnings})`);
+    }
+  }
+
   const ruleSettings = new Map<string, { severity: Severity; options: Record<string, unknown> }>();
   const categorySettings = new Map<Category, boolean>();
 
-  // Initialize categories with default
+  // Validate and initialize categories
   const defaultCategories: Category[] = ['security', 'oss', 'ci', 'package', 'git', 'docker'];
   for (const cat of defaultCategories) {
     const val = userConfig.categories?.[cat] ?? DEFAULT_CONFIG.categories?.[cat] ?? true;
-    categorySettings.set(cat, typeof val === 'boolean' ? val : true);
+    if (typeof val !== 'boolean') {
+      throw new Error(`Invalid configuration: category "${cat}" must be a boolean (received "${String(val)}")`);
+    }
+    categorySettings.set(cat, val);
+  }
+
+  if (userConfig.categories) {
+    for (const catKey of Object.keys(userConfig.categories)) {
+      if (!VALID_CATEGORIES.has(catKey)) {
+        throw new Error(`Invalid configuration: unknown category "${catKey}". Valid categories: ${Array.from(VALID_CATEGORIES).join(', ')}`);
+      }
+    }
   }
 
   // Merge default rules
@@ -105,15 +133,27 @@ export function resolveConfig(userConfig: RepoDoctorConfig): ResolvedConfig {
     }
   }
 
-  // Override with user rules
+  // Override with user rules and validate severity
   if (userConfig.rules) {
     for (const [ruleId, ruleDef] of Object.entries(userConfig.rules)) {
+      let severity: Severity = 'error';
+      let options: Record<string, unknown> = {};
+
       if (typeof ruleDef === 'string') {
-        ruleSettings.set(ruleId, { severity: ruleDef as Severity, options: {} });
+        severity = ruleDef as Severity;
       } else if (typeof ruleDef === 'object' && ruleDef !== null) {
-        const { severity = 'error', ...opts } = ruleDef as { severity?: Severity; [k: string]: unknown };
-        ruleSettings.set(ruleId, { severity, options: opts });
+        const { severity: s = 'error', ...opts } = ruleDef as { severity?: Severity; [k: string]: unknown };
+        severity = s;
+        options = opts;
+      } else {
+        throw new Error(`Invalid configuration for rule "${ruleId}": expected severity string or object`);
       }
+
+      if (!VALID_SEVERITIES.has(severity)) {
+        throw new Error(`Invalid configuration for rule "${ruleId}": unknown severity "${severity}". Valid values: error, warn, info, off`);
+      }
+
+      ruleSettings.set(ruleId, { severity, options });
     }
   }
 

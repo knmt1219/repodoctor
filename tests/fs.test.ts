@@ -46,4 +46,33 @@ describe('Filesystem Security & Traversal Prevention', () => {
       await fsp.rm(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('writeFileSafe should refuse to write through an existing symlink that resolves outside rootBoundary', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-fs-sym-write-'));
+    const outsideDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-fs-sym-out-'));
+    try {
+      const outsideTarget = path.join(outsideDir, 'external_target.txt');
+      await fsp.writeFile(outsideTarget, 'original content', 'utf-8');
+
+      const symlinkInRoot = path.join(tmpDir, 'symlink_in_root.txt');
+      let symlinkCreated = false;
+      try {
+        await fsp.symlink(outsideTarget, symlinkInRoot);
+        symlinkCreated = true;
+      } catch {
+        // Symlink creation might require privileges on Windows
+      }
+
+      if (symlinkCreated) {
+        const ok = await writeFileSafe(symlinkInRoot, 'malicious overwrite', tmpDir);
+        assert.equal(ok, false);
+        // Verify outside content remained unchanged
+        const outsideContent = await fsp.readFile(outsideTarget, 'utf-8');
+        assert.equal(outsideContent, 'original content');
+      }
+    } finally {
+      await fsp.rm(outsideDir, { recursive: true, force: true });
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
 });

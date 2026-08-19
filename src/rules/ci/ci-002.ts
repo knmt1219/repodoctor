@@ -35,15 +35,43 @@ export const ci002: Rule = {
       }
 
       if (triggersOnPR) {
-        const hasConcurrency = 'concurrency' in parsed;
-        if (!hasConcurrency) {
+        let isValidConcurrency = false;
+        let violationReason = '';
+
+        if ('concurrency' in parsed && parsed.concurrency) {
+          const conc = parsed.concurrency;
+          if (typeof conc === 'object' && conc !== null) {
+            const group = (conc as Record<string, unknown>).group;
+            const cancelInProgress = (conc as Record<string, unknown>)['cancel-in-progress'];
+
+            const hasValidGroup = typeof group === 'string' && group.trim().length > 0;
+            const hasCancelInProgress = cancelInProgress === true || cancelInProgress === 'true';
+
+            if (!hasValidGroup && !hasCancelInProgress) {
+              violationReason = "missing non-empty 'group' and 'cancel-in-progress: true'";
+            } else if (!hasValidGroup) {
+              violationReason = "missing or empty 'group'";
+            } else if (!hasCancelInProgress) {
+              violationReason = "missing 'cancel-in-progress: true'";
+            } else {
+              isValidConcurrency = true;
+            }
+          } else {
+            // Scalar concurrency without cancel-in-progress
+            violationReason = "scalar concurrency does not set 'cancel-in-progress: true'";
+          }
+        } else {
+          violationReason = "does not configure 'concurrency' cancellation";
+        }
+
+        if (!isValidConcurrency) {
           results.push({
             ruleId: 'ci-002',
             ruleTitle: ci002.title,
             category: 'ci',
             severity: 'warn',
             file: filePath,
-            message: `Workflow "${filePath}" triggers on pull_request but does not configure 'concurrency' cancellation`,
+            message: `Workflow "${filePath}" triggers on pull_request but ${violationReason}`,
             fixable: false,
             remediation: 'Add `concurrency: { group: "${{ github.workflow }}-${{ github.ref }}", cancel-in-progress: true }`'
           });

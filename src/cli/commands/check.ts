@@ -72,7 +72,11 @@ export async function runCheckCommand(target = '.', options: CheckCliOptions = {
 
     if (options.output) {
       const outPath = path.resolve(process.cwd(), options.output);
-      await writeFileSafe(outPath, outputText);
+      const written = await writeFileSafe(outPath, outputText);
+      if (!written) {
+        console.error(`Error: Failed to write report output to "${options.output}" (resolved to: "${outPath}")`);
+        return 2;
+      }
       console.log(`Report written to ${outPath}`);
     } else {
       console.log(outputText);

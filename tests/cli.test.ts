@@ -90,4 +90,19 @@ describe('CLI Commands Integration & Robustness', () => {
       await fsp.rm(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('runCheckCommand should return 2 if output file write fails', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-check-out-fail-'));
+    try {
+      // Create a directory where the output file would be to force write failure
+      const blockedPath = path.join(tmpDir, 'blocked_dir');
+      await fsp.mkdir(blockedPath);
+
+      // Attempt to write a file directly to the directory path
+      const code = await runCheckCommand(tmpDir, { output: blockedPath });
+      assert.equal(code, 2);
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
 });

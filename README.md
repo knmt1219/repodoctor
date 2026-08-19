@@ -7,7 +7,7 @@
 [![CI](https://github.com/knmt1219/repodoctor/actions/workflows/ci.yml/badge.svg)](https://github.com/knmt1219/repodoctor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
-[![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen)](https://github.com/knmt1219/repodoctor)
+[![Node.js Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/knmt1219/repodoctor)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 </div>
@@ -18,7 +18,7 @@
 
 - [Problem Statement](#problem-statement)
 - [Key Features](#key-features)
-- [Installation](#installation)
+- [Installation & Setup](#installation--setup)
 - [Quick Start](#quick-start)
 - [CLI Usage & Commands](#cli-usage--commands)
 - [Rule Catalog](#rule-catalog)
@@ -51,7 +51,7 @@ As open-source repositories grow, they accumulate **hygiene decay, security vuln
 
 Existing linters are fragmented: ESLint only checks JavaScript ASTs, Flake8 only checks Python, and heavy commercial security scanners require SaaS signups, cloud tokens, or complex setups.
 
-**RepoDoctor** provides a single, instant, zero-config CLI tool that diagnoses 25+ cross-ecosystem repository health metrics, computes a deterministic **0-100 Repository Health Score (Grades A+ to F)**, auto-fixes common violations, and uploads standard **SARIF 2.1.0** reports directly to GitHub Code Scanning.
+**RepoDoctor** provides a single, instant, zero-config CLI tool that diagnoses **29 built-in** cross-ecosystem repository health rules, computes a deterministic **0-100 Repository Health Score (Grades A+ to F)**, auto-fixes common violations, and uploads standard **SARIF 2.1.0** reports directly to GitHub Code Scanning.
 
 ---
 
@@ -68,30 +68,41 @@ Existing linters are fragmented: ESLint only checks JavaScript ASTs, Flake8 only
 
 ---
 
-## Installation
+## Installation & Setup
 
-### Run instantly with `npx` (No installation required)
+### Local Development / Repository Clone
+
+Clone the repository and install dependencies:
 
 ```bash
-npx repodoctor check
+git clone https://github.com/knmt1219/repodoctor.git
+cd repodoctor
+npm install
+npm run build
 ```
 
-### Global Installation
+Run RepoDoctor locally:
 
 ```bash
-# Using npm
+# Run health diagnostics
+node ./bin/repodoctor.js check .
+
+# Run auto-remediation fixers
+node ./bin/repodoctor.js fix .
+```
+
+### When Published to npm
+
+Once published to the npm registry, RepoDoctor can be executed directly:
+
+```bash
+# Run instantly with npx
+npx repodoctor check
+
+# Global installation
 npm install -g repodoctor
 
-# Using yarn
-yarn global add repodoctor
-
-# Using pnpm
-pnpm add -g repodoctor
-```
-
-### Local Project Dependency
-
-```bash
+# Project development dependency
 npm install --save-dev repodoctor
 ```
 
@@ -102,7 +113,7 @@ npm install --save-dev repodoctor
 Run a full health check on your current repository:
 
 ```bash
-repodoctor
+node ./bin/repodoctor.js check .
 ```
 
 Sample output:
@@ -121,13 +132,13 @@ RepoDoctor v0.1.0 — Repository Health & Security Diagnostics
  Health Score: 92/100 (Grade: A)
  Category Breakdown: security: 90%  |  oss: 100%  |  ci: 100%  |  package: 100%  |  git: 90%  |  docker: 100%
 
- Summary: 2 warnings, 1 auto-fixable (27 rules evaluated in 38ms)
+ Summary: 2 warnings, 1 auto-fixable (29 rules evaluated)
 ```
 
 Auto-fix eligible issues immediately:
 
 ```bash
-repodoctor fix
+node ./bin/repodoctor.js fix .
 ```
 
 ---
@@ -166,7 +177,7 @@ repodoctor [command] [options] [target-directory]
 
 ## Rule Catalog
 
-RepoDoctor includes **25+ production-grade rules** categorized across 6 core domains:
+RepoDoctor includes **29 built-in production rules** categorized across 6 core domains:
 
 ### 1. 🔒 Security & Supply Chain (`security`)
 - **`sec-001`** *(error)*: **Action Commit SHA Pinning** — Ensures GitHub Actions use immutable 40-character commit hashes rather than mutable floating tags (`@v4`).
@@ -179,31 +190,31 @@ RepoDoctor includes **25+ production-grade rules** categorized across 6 core dom
 ### 2. 📜 Open Source & Community Standards (`oss`)
 - **`oss-001`** *(error)*: **Valid LICENSE File** — Checks for an OSI-compliant, non-empty LICENSE file.
 - **`oss-002`** *(warn)*: **Comprehensive README** — Ensures README exists and provides structured documentation.
-- **`oss-003`** *(warn)*: **CONTRIBUTING Guide** — Checks for `CONTRIBUTING.md` in root or `.github/`.
-- **`oss-004`** *(info)*: **Code of Conduct** — Checks for `CODE_OF_CONDUCT.md`.
+- **`oss-003`** *(warn, fixable)*: **CONTRIBUTING Guide** — Checks for `CONTRIBUTING.md` in root or `.github/`.
+- **`oss-004`** *(info, fixable)*: **Code of Conduct** — Checks for `CODE_OF_CONDUCT.md`.
 - **`oss-005`** *(warn, fixable)*: **SECURITY.md Policy** — Verifies a vulnerability reporting policy exists.
-- **`oss-006`** *(info)*: **Issue Templates** — Checks for `.github/ISSUE_TEMPLATE/` forms.
+- **`oss-006`** *(info, fixable)*: **Issue Templates** — Checks for `.github/ISSUE_TEMPLATE/` forms.
 - **`oss-007`** *(info, fixable)*: **Pull Request Template** — Checks for `.github/pull_request_template.md`.
 - **`oss-008`** *(warn)*: **Package Metadata Completeness** — Verifies `description` and `repository` fields in package manifests.
 
 ### 3. 🚦 CI/CD Best Practices (`ci`)
 - **`ci-001`** *(warn)*: **Workflow Job Timeouts** — Ensures all GitHub Actions jobs declare `timeout-minutes` to avoid runaway billing.
-- **`ci-002`** *(warn)*: **PR Concurrency Cancellation** — Ensures PR workflows set `concurrency` with `cancel-in-progress: true` to prevent runner backlog.
+- **`ci-002`** *(warn)*: **PR Concurrency Cancellation** — Ensures PR workflows set `concurrency` with `cancel-in-progress: true` and non-empty group to prevent runner backlog.
 - **`ci-003`** *(warn)*: **CI Workflow Presence** — Checks that at least one CI workflow is configured in `.github/workflows/`.
 - **`ci-004`** *(info)*: **Matrix Fail-Fast Policy** — Recommends explicit `fail-fast` configuration on large test matrices.
 
 ### 4. 📦 Package & Dependency Hygiene (`package`)
-- **`pkg-001`** *(error)*: **Committed Lockfile** — Ensures package manifests have matching lockfiles (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `Cargo.lock`).
+- **`pkg-001`** *(error)*: **Committed Lockfile** — Ensures package manifests have matching lockfiles (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `Cargo.lock`, `poetry.lock`, `uv.lock`, `go.sum`).
 - **`pkg-002`** *(error)*: **No Conflicting Lockfiles** — Detects accidental co-existence of multiple lockfiles (e.g. `package-lock.json` AND `yarn.lock`).
 - **`pkg-003`** *(warn)*: **No Wildcard Dependencies** — Flags dangerous `*` or `latest` unconstrained dependencies in `package.json`.
-- **`pkg-004`** *(warn)*: **Standard Lifecycle Scripts** — Ensures `package.json#scripts` includes executable `test`, `build`, or `lint` scripts.
+- **`pkg-004`** *(warn)*: **Standard Lifecycle Scripts** — Ensures `package.json#scripts` includes executable standard lifecycle scripts (e.g. `test`).
 
 ### 5. 📁 Git & File Structure Hygiene (`git`)
 - **`git-001`** *(warn, fixable)*: **Cross-Platform `.gitattributes`** — Ensures `* text=auto eol=lf` is configured to prevent CRLF corruption.
-- **`git-002`** *(error)*: **No Merge Conflict Markers** — Detects committed `<<<<<<<`, `=======`, `>>>>>>>` markers in tracked files.
+- **`git-002`** *(error)*: **No Merge Conflict Markers** — Detects committed `<<<<<<<`, `=======`, `>>>>>>>` markers in files.
 - **`git-003`** *(warn)*: **Large Binary Tracking** — Warns on large binary files (>1MB) tracked without Git LFS.
-- **`git-004`** *(error)*: **No Nested `.git` Directories** — Detects accidental embedded git repositories.
-- **`git-005`** *(error)*: **No Broken Symbolic Links** — Detects dead symlinks pointing to deleted targets.
+- **`git-004`** *(error)*: **No Nested `.git` Directories** — Detects accidental embedded git repositories or unregistered submodules.
+- **`git-005`** *(error)*: **No Broken Symbolic Links** — Detects dead or repository-escaping symlinks.
 
 ### 6. 🐳 Docker & Container Hygiene (`docker`)
 - **`docker-001`** *(warn)*: **Base Image Pinning** — Warns on `:latest` or unpinned tags in `Dockerfile`.
@@ -259,15 +270,18 @@ RepoDoctor also supports `.repodoctor.json`, `.repodoctorrc`, or a `"repodoctor"
 Run:
 
 ```bash
-repodoctor fix
+node ./bin/repodoctor.js fix .
 ```
 
-RepoDoctor will safely apply non-destructive fixes:
-- Generates `.gitattributes` with `* text=auto eol=lf`.
-- Appends `.env`, `.env.*`, `*.key`, and `*.pem` rules to `.gitignore`.
-- Generates a standard `SECURITY.md` vulnerability reporting template.
-- Generates a structured `.github/pull_request_template.md`.
-- Generates `.dockerignore` ignoring node_modules, `.git`, and `.env`.
+RepoDoctor will safely apply non-destructive, idempotent fixes:
+- `git-001`: Generates `.gitattributes` with `* text=auto eol=lf`.
+- `sec-003`: Appends `.env`, `.env.*`, `*.key`, `*.pem`, and `credentials.json` rules to `.gitignore`.
+- `oss-003`: Generates `CONTRIBUTING.md` template.
+- `oss-004`: Generates `CODE_OF_CONDUCT.md` template.
+- `oss-005`: Generates `SECURITY.md` vulnerability reporting policy template.
+- `oss-006`: Generates `.github/ISSUE_TEMPLATE/` forms (`bug_report.yml` and `feature_request.yml`).
+- `oss-007`: Generates `.github/pull_request_template.md`.
+- `docker-002`: Generates `.dockerignore` ignoring node_modules, `.git`, `.env`, and build artifacts.
 
 ---
 
@@ -305,8 +319,9 @@ jobs:
       - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: 20
-      - run: npm install -g repodoctor
-      - run: repodoctor check . --format sarif --output results.sarif
+      - run: npm ci
+      - run: npm run build
+      - run: node ./bin/repodoctor.js check . --format sarif --output results.sarif
         continue-on-error: true
       - uses: github/codeql-action/upload-sarif@6bb034f26f1da0b37c6335a3983f3333bed7a2ff # v3.28.11
         with:
@@ -387,7 +402,8 @@ repodoctor check --format github
 
 1. **Static Analysis Only**: RepoDoctor treats all repository files strictly as **data**. It never executes dynamic shell commands or imports untrusted JavaScript/Python/Ruby files from analyzed repositories.
 2. **Offline & Air-Gapped**: RepoDoctor makes **zero network requests**. It operates entirely on local filesystem state.
-3. **Secret Redaction**: Detected credentials and tokens are redacted with asterisks before being passed to any reporter, preventing accidental leakage in CI logs.
+3. **Symlink Boundary Protection**: Safe file reading and writing strictly resolve paths inside the repository root boundary, refusing to write through or follow external symlinks.
+4. **Secret Redaction**: Detected credentials and tokens are redacted with asterisks before being passed to any reporter, preventing accidental leakage in CI logs.
 
 ---
 
@@ -412,6 +428,13 @@ npm test
 npm run test:coverage
 ```
 
+### Type Checking & Linting
+
+```bash
+npm run typecheck
+npm run lint
+```
+
 ### Self-Dogfooding
 
 ```bash
@@ -428,10 +451,9 @@ Contributions are warmly welcome! Please read our [Contributing Guide](CONTRIBUT
 
 ## Roadmap
 
-- [x] Initial release (v0.1.0) with 25+ production rules and SARIF 2.1.0 support
+- [x] Initial release (v0.1.0) with 29 built-in production rules and SARIF 2.1.0 support
 - [ ] Pre-commit git hook integration (`repodoctor hook install`)
 - [ ] Custom community plugin architecture (`repodoctor-plugin-*`)
-- [ ] Auto-remediation for GitHub Actions timeout injection
 - [ ] Monorepo package boundary and workspace dependency analyzer
 - [ ] Direct PR comment bot GitHub Action
 

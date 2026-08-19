@@ -48,17 +48,19 @@ export function calculateHealthScore(
     data.score = Math.max(0, 100 - penalty);
   }
 
-  // Weighted total score
+  // Weighted total score (only active categories contribute to weights)
   let weightedSum = 0;
   let activeWeightTotal = 0;
 
   for (const cat of CATEGORIES) {
-    const weight = CATEGORY_WEIGHTS[cat];
-    weightedSum += breakdown[cat].score * weight;
-    activeWeightTotal += weight;
+    if ((activeRulesByCategory[cat] || 0) > 0) {
+      const weight = CATEGORY_WEIGHTS[cat];
+      weightedSum += breakdown[cat].score * weight;
+      activeWeightTotal += weight;
+    }
   }
 
-  const finalScore = Math.round(activeWeightTotal > 0 ? (weightedSum / activeWeightTotal) : 100);
+  const finalScore = activeWeightTotal > 0 ? Math.round(weightedSum / activeWeightTotal) : 100;
 
   let grade: HealthScore['grade'] = 'F';
   if (finalScore >= 95) grade = 'A+';

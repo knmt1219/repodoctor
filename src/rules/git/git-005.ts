@@ -1,7 +1,20 @@
 import path from 'node:path';
 import fsp from 'node:fs/promises';
 import { Rule, RuleResult } from '../../core/types.js';
-import { fileExists, isPathInside } from '../../utils/fs.js';
+import { fileExists, dirExists, isPathInside, normalizePath } from '../../utils/fs.js';
+
+const IGNORED_DIRS = new Set([
+  'node_modules',
+  '.git',
+  'dist',
+  'dist-test',
+  'build',
+  'coverage',
+  '.next',
+  '.turbo',
+  'vendor',
+  'target'
+]);
 
 export const git005: Rule = {
   id: 'git-005',
@@ -18,48 +31,106 @@ export const git005: Rule = {
   },
   async check(context): Promise<RuleResult[]> {
     const results: RuleResult[] = [];
-    const files = await context.listFiles();
+    const visitedSymlinks = new Set<string>();
 
+    const canonicalRoot = await fsp.realpath(context.rootDir).catch(() => path.resolve(context.rootDir));
+
+    async function inspectSymlink(fullPath: string, relPath: string): Promise<void> {
+      const normalizedRel = normalizePath(relPath);
+      if (visitedSymlinks.has(normalizedRel)) return;
+      visitedSymlinks.add(normalizedRel);
+
+      try {
+        const target = await fsp.readlink(fullPath);
+        const resolvedTarget = path.isAbsolute(target) ? target : path.resolve(path.dirname(fullPath), target);
+
+        // Check if symlink escapes repository boundary
+        if (!isPathInside(context.rootDir, resolvedTarget)) {
+          results.push({
+            ruleId: 'git-005',
+            ruleTitle: git005.title,
+            category: 'git',
+            severity: 'error',
+            file: normalizedRel,
+            message: `Symbolic link "${normalizedRel}" escapes repository root (points to "${target}")`,
+            fixable: false,
+            remediation: 'Ensure symbolic links only reference files within the repository boundary.'
+          });
+          return;
+        }
+
+        // Canonical realpath check for chained escapes
+        const realTarget = await fsp.realpath(resolvedTarget).catch(() => null);
+        if (realTarget && !isPathInside(canonicalRoot, realTarget)) {
+          results.push({
+            ruleId: 'git-005',
+            ruleTitle: git005.title,
+            category: 'git',
+            severity: 'error',
+            file: normalizedRel,
+            message: `Symbolic link "${normalizedRel}" resolves outside repository root`,
+            fixable: false,
+            remediation: 'Ensure symbolic links only reference files within the repository boundary.'
+          });
+          return;
+        }
+
+        // Check if destination exists
+        const existsAsFile = await fileExists(resolvedTarget);
+        const existsAsDir = await dirExists(resolvedTarget);
+        if (!existsAsFile && !existsAsDir) {
+          results.push({
+            ruleId: 'git-005',
+            ruleTitle: git005.title,
+            category: 'git',
+            severity: 'error',
+            file: normalizedRel,
+            message: `Broken symbolic link "${normalizedRel}" points to non-existent target "${target}"`,
+            fixable: false,
+            remediation: 'Fix the target destination or remove the broken symlink.'
+          });
+        }
+      } catch {
+        // Ignore readlink errors
+      }
+    }
+
+    async function scanDir(currentDir: string, currentRel: string, depth: number): Promise<void> {
+      if (depth > 8) return;
+
+      try {
+        const entries = await fsp.readdir(currentDir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (IGNORED_DIRS.has(entry.name)) continue;
+
+          const fullPath = path.join(currentDir, entry.name);
+          const relPath = currentRel ? `${currentRel}/${entry.name}` : entry.name;
+
+          if (entry.isSymbolicLink()) {
+            await inspectSymlink(fullPath, relPath);
+          } else if (entry.isDirectory()) {
+            await scanDir(fullPath, relPath, depth + 1);
+          }
+        }
+      } catch {
+        // Ignore readdir errors
+      }
+    }
+
+    // 1. Scan filesystem directly for all symlinks (including broken ones)
+    await scanDir(context.rootDir, '', 0);
+
+    // 2. Also check files in context.files in case any virtual or custom file was passed
+    const files = await context.listFiles();
     for (const filePath of files) {
       const fullPath = path.resolve(context.rootDir, filePath);
       try {
         const lstat = await fsp.lstat(fullPath);
         if (lstat.isSymbolicLink()) {
-          const target = await fsp.readlink(fullPath);
-          const resolvedTarget = path.isAbsolute(target) ? target : path.resolve(path.dirname(fullPath), target);
-
-          // Check if symlink escapes repository boundary
-          if (!isPathInside(context.rootDir, resolvedTarget)) {
-            results.push({
-              ruleId: 'git-005',
-              ruleTitle: git005.title,
-              category: 'git',
-              severity: 'error',
-              file: filePath,
-              message: `Symbolic link "${filePath}" escapes repository root (points to "${target}")`,
-              fixable: false,
-              remediation: 'Ensure symbolic links only reference files within the repository boundary.'
-            });
-            continue;
-          }
-
-          // Check if destination exists
-          const targetExists = await fileExists(resolvedTarget);
-          if (!targetExists) {
-            results.push({
-              ruleId: 'git-005',
-              ruleTitle: git005.title,
-              category: 'git',
-              severity: 'error',
-              file: filePath,
-              message: `Broken symbolic link "${filePath}" points to non-existent target "${target}"`,
-              fixable: false,
-              remediation: 'Fix the target destination or remove the broken symlink.'
-            });
-          }
+          await inspectSymlink(fullPath, filePath);
         }
       } catch {
-        // Ignore stat errors for non-existent virtual paths
+        // Ignore
       }
     }
 

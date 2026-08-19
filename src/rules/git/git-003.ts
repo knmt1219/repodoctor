@@ -52,7 +52,9 @@ export const git003: Rule = {
   async check(context): Promise<RuleResult[]> {
     const results: RuleResult[] = [];
     const files = await context.listFiles();
-    const maxSizeKb = 1024; // 1MB threshold
+
+    const rawMax = context.options.config?.maxBinarySizeKb;
+    const maxSizeKb = (typeof rawMax === 'number' && rawMax > 0) ? rawMax : 1024;
 
     // Check if .gitattributes configures Git LFS
     let lfsPatterns: string[] = [];

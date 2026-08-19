@@ -70,6 +70,6 @@ export const DEFAULT_CONFIG: RepoDoctorConfig = {
   options: {
     maxBinarySizeKb: 1024, // 1MB threshold for non-LFS binaries
     allowedLicenses: ['MIT', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', 'ISC', 'MPL-2.0', 'GPL-3.0', 'LGPL-3.0', 'AGPL-3.0', 'Unlicense', 'CC0-1.0'],
-    requiredScripts: ['test', 'build', 'lint']
+    requiredScripts: ['test']
   }
 };

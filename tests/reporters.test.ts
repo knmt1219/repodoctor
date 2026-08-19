@@ -94,9 +94,30 @@ describe('Reporters', () => {
     assert.ok(output.includes('`sec-001`'));
   });
 
-  it('should format GitHub workflow command annotations', () => {
-    const output = formatGitHubAnnotations(mockReport);
-    assert.ok(output.includes('::error file=.github/workflows/ci.yml,line=12,col=9,title=[sec-001] Action Pinning::'));
-    assert.ok(output.includes('::warning title=[git-001] Gitattributes::'));
+  it('should format GitHub workflow command annotations and escape special characters', () => {
+    const reportWithSpecialChars: EngineReport = {
+      ...mockReport,
+      results: [
+        {
+          ruleId: 'sec-001',
+          ruleTitle: 'Rule: With, Colons % More',
+          category: 'security',
+          severity: 'error',
+          message: 'Multi-line\nmessage with % percent\r\nand linebreaks',
+          file: 'src/special,file:name.ts',
+          line: 1,
+          column: 1,
+          fixable: false,
+          remediation: 'Fix\nnewline'
+        }
+      ]
+    };
+
+    const output = formatGitHubAnnotations(reportWithSpecialChars);
+    // Ensure newlines and % are escaped
+    assert.ok(!output.includes('\nmessage'));
+    assert.ok(output.includes('%25 percent'));
+    assert.ok(output.includes('%0A'));
+    assert.ok(output.includes('file=src/special%2Cfile%3Aname.ts'));
   });
 });

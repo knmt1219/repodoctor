@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: 💬 RepoDoctor Discussions
-    url: https://github.com/repodoctor/repodoctor/discussions
+    url: https://github.com/knmt1219/repodoctor/discussions
     about: Ask questions, share feedback, or discuss repository health patterns with the community.
   - name: 🔒 Security Vulnerability Report
-    url: https://github.com/repodoctor/repodoctor/security/advisories/new
+    url: https://github.com/knmt1219/repodoctor/security/advisories/new
     about: Privately report a security issue in RepoDoctor.

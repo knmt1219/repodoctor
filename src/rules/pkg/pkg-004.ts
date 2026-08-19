@@ -1,7 +1,5 @@
 import { Rule, RuleResult } from '../../core/types.js';
 
-const STANDARD_SCRIPTS = ['test'];
-
 export const pkg004: Rule = {
   id: 'pkg-004',
   title: 'package.json should define standard lifecycle scripts (test, build, lint)',
@@ -21,10 +19,15 @@ export const pkg004: Rule = {
 
     if (!pkg) return results;
 
+    const rawRequired = context.options.config?.requiredScripts;
+    const requiredScripts: string[] = (Array.isArray(rawRequired) && rawRequired.length > 0)
+      ? rawRequired.map(String)
+      : ['test'];
+
     const scripts = pkg.scripts || {};
     const missing: string[] = [];
 
-    for (const script of STANDARD_SCRIPTS) {
+    for (const script of requiredScripts) {
       if (!scripts[script] || scripts[script]?.trim().length === 0 || scripts[script]?.includes('no test specified')) {
         missing.push(script);
       }
@@ -39,7 +42,8 @@ export const pkg004: Rule = {
         file: 'package.json',
         message: `package.json is missing standard executable script(s): ${missing.join(', ')}`,
         fixable: false,
-        remediation: `Add a functional "${missing[0]}" script in package.json.`
+        remediation: `Add a functional "${missing[0]}" script in package.json.`,
+        details: { missing, required: requiredScripts }
       });
     }
 

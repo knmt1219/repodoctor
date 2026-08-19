@@ -17,11 +17,13 @@ export class RepoDoctorEngine {
   private config: ResolvedConfig;
   private rootDir: string;
   private rules: Rule[];
+  private isFixMode: boolean;
 
   constructor(options: RunOptions) {
     this.rootDir = options.rootDir;
     this.config = options.config;
     this.rules = options.customRules || ALL_RULES;
+    this.isFixMode = !!options.fix;
   }
 
   public async run(): Promise<{ report: EngineReport; fixes?: FixResult[] }> {
@@ -31,7 +33,8 @@ export class RepoDoctorEngine {
     const context = await createRuleContext({
       rootDir: this.rootDir,
       ignorePatterns: this.config.ignorePatterns,
-      fix: this.config.options?.checkTrackedOnly,
+      fix: this.isFixMode,
+      checkTrackedOnly: this.config.options?.checkTrackedOnly,
       verbose: false,
       config: this.config.options
     });
@@ -138,7 +141,9 @@ export class RepoDoctorEngine {
     // Re-create context for applying fixes
     const context = await createRuleContext({
       rootDir: this.rootDir,
-      ignorePatterns: this.config.ignorePatterns
+      ignorePatterns: this.config.ignorePatterns,
+      fix: true,
+      checkTrackedOnly: this.config.options?.checkTrackedOnly
     });
 
     // Apply fixes

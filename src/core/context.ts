@@ -1,13 +1,14 @@
 import path from 'node:path';
 import { dirExists, fileExists, isPathInside, normalizePath, readFileSafe, scanDirectory } from '../utils/fs.js';
 import { parseJsonSafe, parseYamlSafe } from '../utils/parsers.js';
-import { detectGitInfo } from '../utils/git.js';
+import { detectGitInfo, listTrackedFiles } from '../utils/git.js';
 import { RuleContext } from './types.js';
 
 export interface ContextOptions {
   rootDir: string;
   ignorePatterns?: string[];
   fix?: boolean;
+  checkTrackedOnly?: boolean;
   verbose?: boolean;
   config?: Record<string, unknown>;
 }
@@ -15,10 +16,22 @@ export interface ContextOptions {
 export async function createRuleContext(options: ContextOptions): Promise<RuleContext> {
   const rootDir = path.resolve(options.rootDir);
   const ignorePatterns = options.ignorePatterns || [];
-
-  const files = await scanDirectory(rootDir, ignorePatterns);
-  const fileSet = new Set(files);
   const gitInfo = await detectGitInfo(rootDir);
+
+  let files: string[] = [];
+
+  if (options.checkTrackedOnly && gitInfo.isGitRepo) {
+    const tracked = await listTrackedFiles(rootDir);
+    if (tracked !== null) {
+      files = tracked;
+    } else {
+      files = await scanDirectory(rootDir, ignorePatterns);
+    }
+  } else {
+    files = await scanDirectory(rootDir, ignorePatterns);
+  }
+
+  const fileSet = new Set(files);
 
   // File cache for fast rule execution
   const textCache = new Map<string, Promise<string | null>>();

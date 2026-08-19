@@ -48,16 +48,25 @@ export async function isSymlink(filePath: string): Promise<boolean> {
 
 export async function readFileSafe(filePath: string, maxBytes = 10 * 1024 * 1024, rootBoundary?: string): Promise<string | null> {
   try {
-    // If a root boundary is provided, ensure path does not escape
+    // 1. Lexical boundary check
     if (rootBoundary && !isPathInside(rootBoundary, filePath)) {
       return null;
     }
 
-    // Check lstat to prevent following malicious external symlinks
+    const canonicalRoot = rootBoundary
+      ? await fsp.realpath(rootBoundary).catch(() => path.resolve(rootBoundary))
+      : undefined;
+
+    // 2. Physical check on target file/symlink
     const lstat = await fsp.lstat(filePath);
     if (lstat.isSymbolicLink()) {
-      const real = await fsp.realpath(filePath);
-      if (rootBoundary && !isPathInside(rootBoundary, real)) {
+      const real = await fsp.realpath(filePath).catch(() => null);
+      if (!real || (canonicalRoot && !isPathInside(canonicalRoot, real))) {
+        return null;
+      }
+    } else if (canonicalRoot) {
+      const real = await fsp.realpath(filePath).catch(() => null);
+      if (!real || !isPathInside(canonicalRoot, real)) {
         return null;
       }
     }
@@ -78,15 +87,52 @@ export async function readFileSafe(filePath: string, maxBytes = 10 * 1024 * 1024
 
 export async function writeFileSafe(filePath: string, content: string, rootBoundary?: string): Promise<boolean> {
   try {
+    // 1. Lexical boundary check
     if (rootBoundary && !isPathInside(rootBoundary, filePath)) {
       return false;
     }
 
-    const dir = path.dirname(filePath);
-    if (rootBoundary && !isPathInside(rootBoundary, dir)) {
+    const canonicalRoot = rootBoundary
+      ? await fsp.realpath(rootBoundary).catch(() => path.resolve(rootBoundary))
+      : undefined;
+
+    if (canonicalRoot && !isPathInside(canonicalRoot, path.resolve(filePath))) {
       return false;
     }
 
+    // 2. Physical check on destination if it already exists (prevent writing through external symlink)
+    const lstat = await fsp.lstat(filePath).catch(() => null);
+    if (lstat) {
+      if (lstat.isSymbolicLink()) {
+        const real = await fsp.realpath(filePath).catch(() => null);
+        if (!real || (canonicalRoot && !isPathInside(canonicalRoot, real))) {
+          return false;
+        }
+      } else if (canonicalRoot) {
+        const real = await fsp.realpath(filePath).catch(() => null);
+        if (!real || !isPathInside(canonicalRoot, real)) {
+          return false;
+        }
+      }
+    }
+
+    // 3. Physical check on lowest existing ancestor directory
+    let curr = path.dirname(filePath);
+    while (curr) {
+      const exists = await fsp.stat(curr).then(() => true).catch(() => false);
+      if (exists) {
+        const realDir = await fsp.realpath(curr).catch(() => null);
+        if (!realDir || (canonicalRoot && !isPathInside(canonicalRoot, realDir))) {
+          return false;
+        }
+        break;
+      }
+      const parent = path.dirname(curr);
+      if (parent === curr) break;
+      curr = parent;
+    }
+
+    const dir = path.dirname(filePath);
     await fsp.mkdir(dir, { recursive: true });
     await fsp.writeFile(filePath, content, 'utf-8');
     return true;

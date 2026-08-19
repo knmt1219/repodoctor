@@ -1,6 +1,10 @@
 import path from 'node:path';
-import { dirExists, fileExists } from './fs.js';
+import { dirExists, fileExists, normalizePath } from './fs.js';
 import fsp from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 export interface GitInfo {
   isGitRepo: boolean;
@@ -40,5 +44,32 @@ export async function detectGitInfo(rootDir: string): Promise<GitInfo> {
     };
   } catch {
     return { isGitRepo: false };
+  }
+}
+
+/**
+ * Lists all git-tracked files using safe argument array execution (git ls-files -z).
+ * Returns null if git command fails or directory is not a git repository.
+ */
+export async function listTrackedFiles(rootDir: string): Promise<string[] | null> {
+  try {
+    const { stdout } = await execFileAsync('git', ['ls-files', '-z'], {
+      cwd: rootDir,
+      encoding: 'utf-8',
+      windowsHide: true,
+      maxBuffer: 20 * 1024 * 1024
+    });
+
+    if (!stdout) return [];
+
+    const files = stdout
+      .split('\0')
+      .map(f => f.trim())
+      .filter(Boolean)
+      .map(normalizePath);
+
+    return Array.from(new Set(files)).sort();
+  } catch {
+    return null;
   }
 }

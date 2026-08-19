@@ -17,7 +17,7 @@ All contributors and maintainers are expected to adhere to our [Code of Conduct]
 ### Clone & Install
 
 ```bash
-git clone https://github.com/repodoctor/repodoctor.git
+git clone https://github.com/knmt1219/repodoctor.git
 cd repodoctor
 npm install
 ```
@@ -26,9 +26,10 @@ npm install
 
 - `npm run build`: Compile TypeScript to `dist/`
 - `npm run build:watch`: Run TypeScript compiler in watch mode
+- `npm run typecheck`: Run TypeScript type checking without emitting files
+- `npm run lint`: Run type checking and code consistency verification
 - `npm test`: Compile and run the complete test suite
 - `npm run test:coverage`: Run test suite with experimental V8 code coverage
-- `npm run typecheck`: Run TypeScript type checking without emitting files
 - `npm run doctor`: Run RepoDoctor on this repository (dogfooding)
 - `npm run doctor:fix`: Auto-fix fixable issues on this repository
 
@@ -84,7 +85,7 @@ Adding a new rule is straightforward:
    ```
 3. **Register the rule** in `src/rules/index.ts`.
 4. **Add unit tests** in `tests/rules/<category>.test.ts` with both positive (compliant) and negative (violating) fixtures.
-5. **Verify**: Run `npm test` to ensure all tests pass and coverage remains above 85%.
+5. **Verify**: Run `npm test` to ensure all tests pass.
 
 ## Pull Request Checklist
 

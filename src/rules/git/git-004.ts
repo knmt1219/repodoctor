@@ -1,7 +1,19 @@
 import path from 'node:path';
 import fsp from 'node:fs/promises';
 import { Rule, RuleResult } from '../../core/types.js';
-import { dirExists, normalizePath } from '../../utils/fs.js';
+import { fileExists, normalizePath } from '../../utils/fs.js';
+
+const IGNORED_DIRS = new Set([
+  'node_modules',
+  'dist',
+  'dist-test',
+  'build',
+  'coverage',
+  '.next',
+  '.turbo',
+  'vendor',
+  'target'
+]);
 
 export const git004: Rule = {
   id: 'git-004',
@@ -33,32 +45,63 @@ export const git004: Rule = {
       }
     }
 
-    // Inspect direct subdirectories in rootDir
-    try {
-      const entries = await fsp.readdir(context.rootDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.isDirectory() && entry.name !== '.git' && entry.name !== 'node_modules' && entry.name !== 'dist') {
-          const subDir = path.join(context.rootDir, entry.name);
-          const nestedGit = path.join(subDir, '.git');
-          const relSubDir = normalizePath(entry.name);
+    // Recursively scan subdirectories for nested .git
+    async function scanDir(currentDir: string, currentRel: string, depth: number): Promise<void> {
+      if (depth > 6) return; // Prevent excessive recursion depth
 
-          if ((await dirExists(nestedGit)) && !registeredSubmodules.has(relSubDir)) {
-            results.push({
-              ruleId: 'git-004',
-              ruleTitle: git004.title,
-              category: 'git',
-              severity: 'error',
-              file: `${relSubDir}/.git`,
-              message: `Unregistered nested .git directory detected in "${relSubDir}"`,
-              fixable: false,
-              remediation: `Remove "${relSubDir}/.git" or register it as a formal git submodule.`
-            });
+      try {
+        const entries = await fsp.readdir(currentDir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (IGNORED_DIRS.has(entry.name)) continue;
+
+          const fullPath = path.join(currentDir, entry.name);
+          const relPath = currentRel ? `${currentRel}/${entry.name}` : entry.name;
+          const normalizedRel = normalizePath(relPath);
+
+          if (entry.isDirectory()) {
+            if (entry.name === '.git') {
+              // Root .git is valid; any nested .git is a violation unless registered
+              if (currentRel && !registeredSubmodules.has(normalizePath(currentRel))) {
+                results.push({
+                  ruleId: 'git-004',
+                  ruleTitle: git004.title,
+                  category: 'git',
+                  severity: 'error',
+                  file: `${normalizedRel}`,
+                  message: `Unregistered nested .git directory detected in "${currentRel}"`,
+                  fixable: false,
+                  remediation: `Remove "${normalizedRel}" or register it as a formal git submodule.`
+                });
+              }
+              continue; // Do not recurse inside .git
+            }
+
+            // Also check if this subdirectory contains a .git file (e.g. submodule pointer)
+            const nestedGitFile = path.join(fullPath, '.git');
+            if (await fileExists(nestedGitFile)) {
+              if (!registeredSubmodules.has(normalizedRel)) {
+                results.push({
+                  ruleId: 'git-004',
+                  ruleTitle: git004.title,
+                  category: 'git',
+                  severity: 'error',
+                  file: `${normalizedRel}/.git`,
+                  message: `Unregistered nested .git submodule file detected in "${normalizedRel}"`,
+                  fixable: false,
+                  remediation: `Register "${normalizedRel}" in .gitmodules or remove the nested .git file.`
+                });
+              }
+            }
+
+            await scanDir(fullPath, relPath, depth + 1);
           }
         }
+      } catch {
+        // Ignore unreadable directories
       }
-    } catch {
-      // Ignore directory read errors
     }
+
+    await scanDir(context.rootDir, '', 0);
 
     return results;
   }

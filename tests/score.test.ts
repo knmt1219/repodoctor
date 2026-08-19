@@ -49,6 +49,49 @@ describe('Health Score Calculator', () => {
     assert.equal(score.breakdown.security.score, 65);
   });
 
+  it('should recalculate weight distribution when some categories are disabled', () => {
+    // Only 'security' is enabled (activeRules = 6), all others 0
+    const partialCounts = {
+      security: 6,
+      oss: 0,
+      ci: 0,
+      package: 0,
+      git: 0,
+      docker: 0
+    };
+
+    const violations: RuleResult[] = [
+      {
+        ruleId: 'sec-001',
+        ruleTitle: 'Action pinning',
+        category: 'security',
+        severity: 'error',
+        message: 'Violation',
+        fixable: false
+      }
+    ];
+
+    const score = calculateHealthScore(violations, partialCounts);
+    // Security score: 100 - 25 = 75. Since only security is active, total score is exactly 75!
+    assert.equal(score.score, 75);
+    assert.equal(score.grade, 'B');
+  });
+
+  it('should return 100 and Grade A+ when all categories are disabled', () => {
+    const zeroCounts = {
+      security: 0,
+      oss: 0,
+      ci: 0,
+      package: 0,
+      git: 0,
+      docker: 0
+    };
+
+    const score = calculateHealthScore([], zeroCounts);
+    assert.equal(score.score, 100);
+    assert.equal(score.grade, 'A+');
+  });
+
   it('should assign correct letter grades based on total score', () => {
     const categories: Array<RuleResult['category']> = ['security', 'oss', 'ci', 'package', 'git', 'docker'];
     const manyErrors: RuleResult[] = [];

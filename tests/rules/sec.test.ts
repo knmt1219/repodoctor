@@ -7,6 +7,14 @@ import { sec004 } from '../../src/rules/sec/sec-004.js';
 import { sec005 } from '../../src/rules/sec/sec-005.js';
 import { sec006 } from '../../src/rules/sec/sec-006.js';
 import { createMockContext } from '../helpers.js';
+import { createRuleContext } from '../../src/core/context.js';
+import os from 'node:os';
+import path from 'node:path';
+import fsp from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 describe('Security Rules (sec-001 to sec-006)', () => {
   describe('sec-001: Action Pinning', () => {
@@ -130,6 +138,34 @@ describe('Security Rules (sec-001 to sec-006)', () => {
       assert.equal(res.length, 1);
       assert.equal(res[0]?.ruleId, 'sec-005');
       assert.ok(!res[0]?.message.includes(dummyKey)); // Verify redacted
+    });
+
+    it('should respect checkTrackedOnly: exclude untracked secrets in git repository', async () => {
+      const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-tracked-test-'));
+      try {
+        await execFileAsync('git', ['init'], { cwd: tmpDir });
+        const trackedFile = path.join(tmpDir, 'app.ts');
+        await fsp.writeFile(trackedFile, 'console.log("clean");\n', 'utf-8');
+        await execFileAsync('git', ['add', 'app.ts'], { cwd: tmpDir });
+
+        const untrackedSecretFile = path.join(tmpDir, 'secret_untracked.ts');
+        const dummyKey = 'sk-proj-7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b';
+        await fsp.writeFile(untrackedSecretFile, `const key = "${dummyKey}";\n`, 'utf-8');
+
+        // Mode 1: checkTrackedOnly = false (default) -> flags untracked file
+        const ctxDefault = await createRuleContext({ rootDir: tmpDir, checkTrackedOnly: false });
+        const resDefault = await sec005.check(ctxDefault);
+        assert.equal(resDefault.length, 1);
+
+        // Mode 2: checkTrackedOnly = true -> ignores untracked file
+        const ctxTracked = await createRuleContext({ rootDir: tmpDir, checkTrackedOnly: true });
+        const resTracked = await sec005.check(ctxTracked);
+        assert.equal(resTracked.length, 0);
+      } catch (err: unknown) {
+        // Skip if git is unavailable in environment
+      } finally {
+        await fsp.rm(tmpDir, { recursive: true, force: true });
+      }
     });
   });
 

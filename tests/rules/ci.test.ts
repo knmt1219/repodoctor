@@ -33,7 +33,34 @@ describe('CI/CD Best Practices Rules (ci-001 to ci-004)', () => {
     assert.equal(res[0]?.ruleId, 'ci-002');
   });
 
-  it('ci-002: should pass PR workflows with concurrency configured', async () => {
+  it('ci-002: should flag scalar string concurrency without cancel-in-progress', async () => {
+    const ctx = createMockContext({
+      '.github/workflows/pr.yml': 'name: PR\non: pull_request\nconcurrency: my-concurrency-group\njobs:\n  test:\n    runs-on: ubuntu-latest\n'
+    });
+    const res = await ci002.check(ctx);
+    assert.equal(res.length, 1);
+    assert.ok(res[0]?.message.includes('scalar concurrency'));
+  });
+
+  it('ci-002: should flag concurrency with cancel-in-progress: false', async () => {
+    const ctx = createMockContext({
+      '.github/workflows/pr.yml': 'name: PR\non: pull_request\nconcurrency:\n  group: ${{ github.ref }}\n  cancel-in-progress: false\njobs:\n  test:\n    runs-on: ubuntu-latest\n'
+    });
+    const res = await ci002.check(ctx);
+    assert.equal(res.length, 1);
+    assert.ok(res[0]?.message.includes("missing 'cancel-in-progress: true'"));
+  });
+
+  it('ci-002: should flag concurrency with missing or empty group', async () => {
+    const ctx = createMockContext({
+      '.github/workflows/pr.yml': 'name: PR\non: pull_request\nconcurrency:\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n'
+    });
+    const res = await ci002.check(ctx);
+    assert.equal(res.length, 1);
+    assert.ok(res[0]?.message.includes("missing or empty 'group'"));
+  });
+
+  it('ci-002: should pass PR workflows with concurrency group and cancel-in-progress: true', async () => {
     const ctx = createMockContext({
       '.github/workflows/pr.yml': 'name: PR\non: pull_request\nconcurrency:\n  group: ${{ github.ref }}\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n'
     });
