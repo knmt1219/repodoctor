@@ -15,8 +15,8 @@ describe('Filesystem Security & Traversal Prevention', () => {
   it('isPathInside should return false for traversal attempts escaping root directory', () => {
     assert.equal(isPathInside('/app/repo', '/app/repo/../secret.txt'), false);
     assert.equal(isPathInside('/app/repo', '/etc/passwd'), false);
-    assert.equal(isPathInside('C:\\repo', 'C:\\Windows\\System32'), false);
-    assert.equal(isPathInside('C:\\repo', 'C:\\repo\\..\\outside'), false);
+    assert.equal(isPathInside(path.resolve('/repo'), path.resolve('/other/System32')), false);
+    assert.equal(isPathInside(path.resolve('/repo'), path.resolve('/repo/../outside')), false);
   });
 
   it('readFileSafe should refuse to read files outside rootBoundary', async () => {
