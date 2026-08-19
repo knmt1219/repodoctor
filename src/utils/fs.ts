@@ -96,10 +96,6 @@ export async function writeFileSafe(filePath: string, content: string, rootBound
       ? await fsp.realpath(rootBoundary).catch(() => path.resolve(rootBoundary))
       : undefined;
 
-    if (canonicalRoot && !isPathInside(canonicalRoot, path.resolve(filePath))) {
-      return false;
-    }
-
     // 2. Physical check on destination if it already exists (prevent writing through external symlink)
     const lstat = await fsp.lstat(filePath).catch(() => null);
     if (lstat) {
