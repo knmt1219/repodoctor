@@ -1,7 +1,7 @@
 {
   "name": "@hominhtuan/repodoctor",
-  "version": "0.1.3",
-  "description": "Zero-config Repository Health, Security & CI Linter for modern open-source projects",
+  "version": "0.1.4",
+  "description": "Fast, zero-config Repository Health, Security & CI Linter for modern open-source projects. Diagnoses GitHub Actions misconfigurations, OSS governance, secret ignores, lockfile hygiene, and exports SARIF 2.1.0.",
   "keywords": [
     "linter",
     "repository-health",
@@ -10,7 +10,13 @@
     "ci-cd",
     "open-source",
     "sarif",
-    "code-quality"
+    "code-quality",
+    "devops",
+    "pre-commit",
+    "dependabot",
+    "codeowners",
+    "supply-chain-security",
+    "oss-hygiene"
   ],
   "homepage": "https://github.com/knmt1219/repodoctor#readme",
   "bugs": {
@@ -33,8 +39,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "repodoctor": "./bin/repodoctor.js",
-    "@hominhtuan/repodoctor": "./bin/repodoctor.js"
+    "repodoctor": "./bin/repodoctor.js"
   },
   "publishConfig": {
     "access": "public"
@@ -44,7 +49,8 @@
     "bin",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "action.yml"
   ],
   "engines": {
     "node": ">=18.0.0"

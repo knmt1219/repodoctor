@@ -11,15 +11,16 @@ export function createCli(): Command {
   program
     .name('repodoctor')
     .description('Zero-config Repository Health, Security & CI Linter for modern open-source projects')
-    .version('0.1.3');
+    .version('0.1.4');
 
   program
     .command('check', { isDefault: true })
     .description('Run repository health and security diagnostics')
     .argument('[target]', 'Target repository directory', '.')
     .option('-c, --config <path>', 'Path to custom configuration file')
-    .option('-f, --format <format>', 'Output format: terminal, json, sarif, markdown, github', 'terminal')
+    .option('-f, --format <format>', 'Output format: terminal, json, sarif, markdown, markdown-pr, github', 'terminal')
     .option('-o, --output <file>', 'Save output report to file')
+    .option('--summary', 'Output concise Markdown PR summary table (ideal for CI PR comments)')
     .option('--score-threshold <number>', 'Fail if health score is below threshold')
     .option('--max-warnings <number>', 'Fail if number of warnings exceeds limit')
     .option('--strict', 'Treat warnings as errors (exit with code 1 if any warnings exist)')
@@ -34,6 +35,7 @@ export function createCli(): Command {
     .description('Automatically apply remediation fixes to repository')
     .argument('[target]', 'Target repository directory', '.')
     .option('-c, --config <path>', 'Path to custom configuration file')
+    .option('--dry-run', 'Preview fixes that would be applied without modifying files')
     .option('--strict', 'Treat remaining warnings as errors')
     .action(async (target, options) => {
       const exitCode = await runFixCommand(target, options);

@@ -8,9 +8,10 @@ import { oss005 } from '../../src/rules/oss/oss-005.js';
 import { oss006 } from '../../src/rules/oss/oss-006.js';
 import { oss007 } from '../../src/rules/oss/oss-007.js';
 import { oss008 } from '../../src/rules/oss/oss-008.js';
+import { oss009 } from '../../src/rules/oss/oss-009.js';
 import { createMockContext } from '../helpers.js';
 
-describe('OSS Standards Rules (oss-001 to oss-008)', () => {
+describe('OSS Standards Rules (oss-001 to oss-009)', () => {
   it('oss-001: should detect missing LICENSE', async () => {
     const ctx = createMockContext({});
     const res = await oss001.check(ctx);
@@ -78,5 +79,29 @@ describe('OSS Standards Rules (oss-001 to oss-008)', () => {
     });
     const res = await oss008.check(ctx);
     assert.equal(res.length, 2); // description and repository
+  });
+
+  it('oss-009: should detect missing CODEOWNERS', async () => {
+    const ctx = createMockContext({});
+    const res = await oss009.check(ctx);
+    assert.equal(res.length, 1);
+    assert.equal(res[0]?.ruleId, 'oss-009');
+    assert.equal(res[0]?.severity, 'warn');
+  });
+
+  it('oss-009: should pass when .github/CODEOWNERS exists', async () => {
+    const ctx = createMockContext({
+      '.github/CODEOWNERS': '* @maintainer\n'
+    });
+    const res = await oss009.check(ctx);
+    assert.equal(res.length, 0);
+  });
+
+  it('oss-009: should pass when docs/CODEOWNERS exists', async () => {
+    const ctx = createMockContext({
+      'docs/CODEOWNERS': '* @lead-dev\n'
+    });
+    const res = await oss009.check(ctx);
+    assert.equal(res.length, 0);
   });
 });

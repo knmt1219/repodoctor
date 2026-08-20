@@ -1,0 +1,17 @@
+- id: repodoctor-check
+  name: RepoDoctor Check
+  description: Fast, zero-config repository health, security, and CI diagnostics
+  entry: npx @hominhtuan/repodoctor check
+  language: node
+  pass_filenames: false
+  always_run: true
+  files: ""
+
+- id: repodoctor-fix
+  name: RepoDoctor Fix
+  description: Automatically remediate missing repository governance and security files
+  entry: npx @hominhtuan/repodoctor fix
+  language: node
+  pass_filenames: false
+  always_run: true
+  files: ""

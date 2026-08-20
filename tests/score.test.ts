@@ -6,8 +6,8 @@ import { RuleResult } from '../src/core/types.js';
 describe('Health Score Calculator', () => {
   const activeCounts = {
     security: 6,
-    oss: 8,
-    ci: 4,
+    oss: 9,
+    ci: 5,
     package: 4,
     git: 5,
     docker: 2

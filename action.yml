@@ -1,0 +1,65 @@
+name: 'RepoDoctor Repository Health & Security Linter'
+description: 'Zero-config repository health, CI security, lockfile hygiene, and OSS governance diagnostics with SARIF report.'
+author: 'RepoDoctor Contributors'
+
+branding:
+  icon: 'activity'
+  color: 'blue'
+
+inputs:
+  target:
+    description: 'Target directory to analyze'
+    required: false
+    default: '.'
+  config:
+    description: 'Path to custom .repodoctor.yml configuration file'
+    required: false
+  format:
+    description: 'Output format (terminal, json, sarif, markdown, markdown-pr, github)'
+    required: false
+    default: 'github'
+  output:
+    description: 'Path to write the report output file (e.g. repodoctor-results.sarif)'
+    required: false
+  score-threshold:
+    description: 'Minimum required repository health score (0-100)'
+    required: false
+    default: '75'
+  max-warnings:
+    description: 'Maximum allowable warnings before failing (-1 for unlimited)'
+    required: false
+    default: '-1'
+  strict:
+    description: 'Fail with exit code 1 if any warnings exist'
+    required: false
+    default: 'false'
+  summary:
+    description: 'Automatically append Markdown report to GitHub Actions Step Summary'
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run RepoDoctor Linter
+      shell: bash
+      run: |
+        ARGS="check ${{ inputs.target }} --format ${{ inputs.format }} --score-threshold ${{ inputs.score-threshold }} --max-warnings ${{ inputs.max-warnings }}"
+        if [ -n "${{ inputs.config }}" ]; then
+          ARGS="$ARGS --config ${{ inputs.config }}"
+        fi
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          ARGS="$ARGS --strict"
+        fi
+        if [ -n "${{ inputs.output }}" ]; then
+          ARGS="$ARGS --output ${{ inputs.output }}"
+        fi
+
+        node "${{ github.action_path }}/bin/repodoctor.js" $ARGS
+        EXIT_STATUS=$?
+
+        if [ "${{ inputs.summary }}" = "true" ] && [ -n "$GITHUB_STEP_SUMMARY" ]; then
+          node "${{ github.action_path }}/bin/repodoctor.js" check "${{ inputs.target }}" --format markdown-pr >> $GITHUB_STEP_SUMMARY
+        fi
+
+        exit $EXIT_STATUS

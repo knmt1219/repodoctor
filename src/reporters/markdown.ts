@@ -59,3 +59,71 @@ export function formatMarkdownReport(report: EngineReport, fixes?: FixResult[]):
 
   return lines.join('\n');
 }
+
+export function formatMarkdownPrSummary(report: EngineReport, fixes?: FixResult[]): string {
+  const lines: string[] = [];
+
+  const gradeEmoji = {
+    'A+': '🟢 🏆',
+    'A': '🟢',
+    'B': '🔵',
+    'C': '🟡',
+    'D': '🟠',
+    'F': '🔴'
+  }[report.score.grade];
+
+  const statusBadge = report.summary.errors === 0 ? '✅ Pass' : '❌ Action Required';
+
+  lines.push(`### 🩺 RepoDoctor PR Diagnostics — ${statusBadge}`);
+  lines.push('');
+  lines.push(`| Health Score | Grade | Errors | Warnings | Auto-Fixable |`);
+  lines.push(`| :---: | :---: | :---: | :---: | :---: |`);
+  lines.push(`| **${report.score.score}/100** | ${gradeEmoji} **${report.score.grade}** | ${report.summary.errors > 0 ? `🔴 ${report.summary.errors}` : '0'} | ${report.summary.warnings > 0 ? `🟡 ${report.summary.warnings}` : '0'} | ${report.summary.fixable > 0 ? `🛠️ ${report.summary.fixable}` : '0'} |`);
+  lines.push('');
+
+  if (fixes && fixes.length > 0) {
+    lines.push('<details><summary><b>🛠️ Applied Fixes (' + fixes.length + ')</b></summary>');
+    lines.push('');
+    for (const fix of fixes) {
+      lines.push(`- ${fix.fixed ? '✅' : '❌'} **${fix.ruleId}**: ${fix.message}`);
+    }
+    lines.push('');
+    lines.push('</details>');
+    lines.push('');
+  }
+
+  if (report.results.length === 0) {
+    lines.push('> 🎉 **All checks passed!** Repository meets all security, CI, and OSS hygiene standards.');
+  } else {
+    lines.push('<details open><summary><b>📋 Findings & Action Items (' + report.results.length + ')</b></summary>');
+    lines.push('');
+    lines.push('| Severity | Rule | File | Remediation |');
+    lines.push('| :---: | :--- | :--- | :--- |');
+
+    for (const res of report.results) {
+      const sev = res.severity === 'error' ? '🔴 Error' : res.severity === 'warn' ? '🟡 Warn' : '🔵 Info';
+      const loc = res.file ? `\`${res.file}${res.line ? `:${res.line}` : ''}\`` : '—';
+      const fix = res.remediation ? res.remediation.replace(/\|/g, '\\|') : res.message.replace(/\|/g, '\\|');
+      lines.push(`| ${sev} | \`${res.ruleId}\` | ${loc} | ${fix} |`);
+    }
+
+    lines.push('');
+    lines.push('</details>');
+    lines.push('');
+  }
+
+  lines.push('<details><summary><b>📊 Category Breakdown</b></summary>');
+  lines.push('');
+  lines.push('| Category | Score | Status |');
+  lines.push('| :--- | :---: | :--- |');
+  for (const [cat, data] of Object.entries(report.score.breakdown)) {
+    const status = data.errors > 0 ? '🔴 Errors' : data.warnings > 0 ? '🟡 Warnings' : '🟢 Healthy';
+    lines.push(`| **${cat}** | ${data.score}% | ${status} |`);
+  }
+  lines.push('');
+  lines.push('</details>');
+  lines.push('');
+  lines.push(`<sub>Scanned with <a href="https://github.com/knmt1219/repodoctor">RepoDoctor v${report.version}</a> in ${report.elapsedMs}ms</sub>`);
+
+  return lines.join('\n');
+}

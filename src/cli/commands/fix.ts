@@ -7,6 +7,7 @@ import { dirExists } from '../../utils/fs.js';
 export interface FixCliOptions {
   config?: string;
   strict?: boolean;
+  dryRun?: boolean;
 }
 
 export async function runFixCommand(target = '.', options: FixCliOptions = {}): Promise<number> {
@@ -25,7 +26,7 @@ export async function runFixCommand(target = '.', options: FixCliOptions = {}): 
       config
     });
 
-    const { report, fixes } = await engine.fix();
+    const { report, fixes } = await engine.fix({ dryRun: options.dryRun });
 
     console.log(formatTerminalReport(report, fixes));
 

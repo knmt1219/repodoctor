@@ -4,6 +4,7 @@ import {
   formatGitHubAnnotations,
   formatJsonReport,
   formatMarkdownReport,
+  formatMarkdownPrSummary,
   formatSarifReport,
   formatTerminalReport
 } from '../src/reporters/index.js';
@@ -13,7 +14,7 @@ describe('Reporters', () => {
   const mockReport: EngineReport = {
     timestamp: '2026-08-19T00:00:00.000Z',
     targetDir: '/mock/repo',
-    version: '0.1.0',
+    version: '0.1.4',
     results: [
       {
         ruleId: 'sec-001',
@@ -42,8 +43,8 @@ describe('Reporters', () => {
       grade: 'A',
       breakdown: {
         security: { score: 75, totalChecked: 6, violations: 1, errors: 1, warnings: 0, infos: 0 },
-        oss: { score: 100, totalChecked: 8, violations: 0, errors: 0, warnings: 0, infos: 0 },
-        ci: { score: 100, totalChecked: 4, violations: 0, errors: 0, warnings: 0, infos: 0 },
+        oss: { score: 100, totalChecked: 9, violations: 0, errors: 0, warnings: 0, infos: 0 },
+        ci: { score: 100, totalChecked: 5, violations: 0, errors: 0, warnings: 0, infos: 0 },
         package: { score: 100, totalChecked: 4, violations: 0, errors: 0, warnings: 0, infos: 0 },
         git: { score: 90, totalChecked: 5, violations: 1, errors: 0, warnings: 1, infos: 0 },
         docker: { score: 100, totalChecked: 2, violations: 0, errors: 0, warnings: 0, infos: 0 }
@@ -55,8 +56,8 @@ describe('Reporters', () => {
       warnings: 1,
       infos: 0,
       fixable: 1,
-      passed: 27,
-      rulesEvaluated: 29
+      passed: 29,
+      rulesEvaluated: 31
     },
     elapsedMs: 42
   };
@@ -72,7 +73,7 @@ describe('Reporters', () => {
   it('should format JSON report matching schema', () => {
     const output = formatJsonReport(mockReport);
     const parsed = JSON.parse(output);
-    assert.equal(parsed.report.version, '0.1.0');
+    assert.equal(parsed.report.version, '0.1.4');
     assert.equal(parsed.report.summary.errors, 1);
     assert.equal(parsed.report.results.length, 2);
   });
@@ -92,6 +93,16 @@ describe('Reporters', () => {
     assert.ok(output.includes('## 🩺 RepoDoctor Health Report'));
     assert.ok(output.includes('| **security** | 75% | 1 | 0 | 0 |'));
     assert.ok(output.includes('`sec-001`'));
+  });
+
+  it('should format compact Markdown PR summary', () => {
+    const output = formatMarkdownPrSummary(mockReport);
+    assert.ok(output.includes('RepoDoctor PR Diagnostics'));
+    assert.ok(output.includes('Action Required'));
+    assert.ok(output.includes('85/100'));
+    assert.ok(output.includes('<details open>'));
+    assert.ok(output.includes('`sec-001`'));
+    assert.ok(output.includes('<details><summary><b>📊 Category Breakdown</b></summary>'));
   });
 
   it('should format GitHub workflow command annotations and escape special characters', () => {

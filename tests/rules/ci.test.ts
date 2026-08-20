@@ -4,9 +4,10 @@ import { ci001 } from '../../src/rules/ci/ci-001.js';
 import { ci002 } from '../../src/rules/ci/ci-002.js';
 import { ci003 } from '../../src/rules/ci/ci-003.js';
 import { ci004 } from '../../src/rules/ci/ci-004.js';
+import { ci005 } from '../../src/rules/ci/ci-005.js';
 import { createMockContext } from '../helpers.js';
 
-describe('CI/CD Best Practices Rules (ci-001 to ci-004)', () => {
+describe('CI/CD Best Practices Rules (ci-001 to ci-005)', () => {
   it('ci-001: should flag workflow jobs missing timeout-minutes', async () => {
     const ctx = createMockContext({
       '.github/workflows/ci.yml': 'name: CI\njobs:\n  build:\n    runs-on: ubuntu-latest\n'
@@ -81,5 +82,29 @@ describe('CI/CD Best Practices Rules (ci-001 to ci-004)', () => {
     const res = await ci004.check(ctx);
     assert.equal(res.length, 1);
     assert.equal(res[0]?.ruleId, 'ci-004');
+  });
+
+  it('ci-005: should detect missing dependabot or renovate config', async () => {
+    const ctx = createMockContext({});
+    const res = await ci005.check(ctx);
+    assert.equal(res.length, 1);
+    assert.equal(res[0]?.ruleId, 'ci-005');
+    assert.equal(res[0]?.severity, 'warn');
+  });
+
+  it('ci-005: should pass when .github/dependabot.yml exists', async () => {
+    const ctx = createMockContext({
+      '.github/dependabot.yml': 'version: 2\nupdates:\n  - package-ecosystem: npm\n'
+    });
+    const res = await ci005.check(ctx);
+    assert.equal(res.length, 0);
+  });
+
+  it('ci-005: should pass when renovate.json exists', async () => {
+    const ctx = createMockContext({
+      'renovate.json': '{\n  "$schema": "https://docs.renovatebot.com/renovate-schema.json"\n}\n'
+    });
+    const res = await ci005.check(ctx);
+    assert.equal(res.length, 0);
   });
 });

@@ -53,12 +53,33 @@ describe('CLI Commands Integration & Robustness', () => {
     }
   });
 
+  it('runFixCommand should support --dry-run without modifying files', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-fix-dry-cmd-'));
+    try {
+      const code = await runFixCommand(tmpDir, { dryRun: true });
+      assert.ok(code === 0 || code === 1);
+      assert.equal(await fileExists(path.join(tmpDir, '.gitattributes')), false);
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it('runCheckCommand should support --fix and --strict flags', async () => {
     const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-check-fix-'));
     try {
       const code = await runCheckCommand(tmpDir, { fix: true, strict: false });
       assert.ok(code === 0 || code === 1);
       assert.equal(await fileExists(path.join(tmpDir, '.gitattributes')), true);
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('runCheckCommand should support --summary and format markdown-pr', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-check-sum-'));
+    try {
+      const code = await runCheckCommand(tmpDir, { summary: true });
+      assert.ok(code === 0 || code === 1);
     } finally {
       await fsp.rm(tmpDir, { recursive: true, force: true });
     }

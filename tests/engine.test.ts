@@ -16,7 +16,7 @@ describe('RepoDoctor Engine', () => {
 
     const { report } = await engine.run();
 
-    assert.equal(report.version, '0.1.3');
+    assert.equal(report.version, '0.1.4');
     assert.ok(typeof report.score.score === 'number');
     assert.ok(report.summary.rulesEvaluated > 0);
     assert.ok(Array.isArray(report.results));

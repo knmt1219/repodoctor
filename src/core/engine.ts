@@ -124,7 +124,7 @@ export class RepoDoctorEngine {
     const report: EngineReport = {
       timestamp: new Date().toISOString(),
       targetDir: this.rootDir,
-      version: '0.1.3',
+      version: '0.1.4',
       results: allResults,
       score,
       summary,
@@ -134,7 +134,7 @@ export class RepoDoctorEngine {
     return { report };
   }
 
-  public async fix(): Promise<{ report: EngineReport; fixes: FixResult[] }> {
+  public async fix(options: { dryRun?: boolean } = {}): Promise<{ report: EngineReport; fixes: FixResult[] }> {
     // First run to find issues
     const { report } = await this.run();
 
@@ -147,7 +147,14 @@ export class RepoDoctorEngine {
     });
 
     // Apply fixes
-    const fixes = await applyRuleFixes(report.results, context);
+    const fixes = await applyRuleFixes(report.results, context, { dryRun: options.dryRun });
+
+    if (options.dryRun) {
+      return {
+        report,
+        fixes
+      };
+    }
 
     // Re-run after fixes to get updated report
     const updated = await this.run();

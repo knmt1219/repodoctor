@@ -17,12 +17,14 @@ import { oss005 } from './oss/oss-005.js';
 import { oss006 } from './oss/oss-006.js';
 import { oss007 } from './oss/oss-007.js';
 import { oss008 } from './oss/oss-008.js';
+import { oss009 } from './oss/oss-009.js';
 
 // CI Rules
 import { ci001 } from './ci/ci-001.js';
 import { ci002 } from './ci/ci-002.js';
 import { ci003 } from './ci/ci-003.js';
 import { ci004 } from './ci/ci-004.js';
+import { ci005 } from './ci/ci-005.js';
 
 // Package Rules
 import { pkg001 } from './pkg/pkg-001.js';
@@ -42,7 +44,7 @@ import { docker001 } from './docker/docker-001.js';
 import { docker002 } from './docker/docker-002.js';
 
 export const ALL_RULES: Rule[] = [
-  // Security
+  // Security (6 rules)
   sec001,
   sec002,
   sec003,
@@ -50,7 +52,7 @@ export const ALL_RULES: Rule[] = [
   sec005,
   sec006,
 
-  // OSS & Community
+  // OSS & Community (9 rules)
   oss001,
   oss002,
   oss003,
@@ -59,27 +61,29 @@ export const ALL_RULES: Rule[] = [
   oss006,
   oss007,
   oss008,
+  oss009,
 
-  // CI/CD
+  // CI/CD (5 rules)
   ci001,
   ci002,
   ci003,
   ci004,
+  ci005,
 
-  // Package
+  // Package (4 rules)
   pkg001,
   pkg002,
   pkg003,
   pkg004,
 
-  // Git
+  // Git (5 rules)
   git001,
   git002,
   git003,
   git004,
   git005,
 
-  // Docker
+  // Docker (2 rules)
   docker001,
   docker002
 ];

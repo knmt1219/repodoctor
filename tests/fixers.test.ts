@@ -216,6 +216,63 @@ describe('Auto-Fixers Safety & Idempotency', () => {
     }
   });
 
+  it('should auto-fix oss-009 by creating .github/CODEOWNERS', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-fix-oss9-'));
+    try {
+      const context = await createRuleContext({ rootDir: tmpDir });
+      const violations: RuleResult[] = [
+        {
+          ruleId: 'oss-009',
+          ruleTitle: 'CODEOWNERS',
+          category: 'oss',
+          severity: 'warn',
+          message: 'Missing CODEOWNERS',
+          fixable: true
+        }
+      ];
+
+      const fixes = await applyRuleFixes(violations, context);
+      assert.equal(fixes.length, 1);
+      assert.equal(fixes[0]?.fixed, true);
+
+      const targetPath = path.join(tmpDir, '.github', 'CODEOWNERS');
+      assert.equal(await fileExists(targetPath), true);
+      const content = await readFileSafe(targetPath);
+      assert.ok(content?.includes('* @maintainer'));
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should auto-fix ci-005 by creating .github/dependabot.yml', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-fix-ci5-'));
+    try {
+      const context = await createRuleContext({ rootDir: tmpDir });
+      const violations: RuleResult[] = [
+        {
+          ruleId: 'ci-005',
+          ruleTitle: 'Automated dependency updates',
+          category: 'ci',
+          severity: 'warn',
+          message: 'Missing dependabot.yml',
+          fixable: true
+        }
+      ];
+
+      const fixes = await applyRuleFixes(violations, context);
+      assert.equal(fixes.length, 1);
+      assert.equal(fixes[0]?.fixed, true);
+
+      const targetPath = path.join(tmpDir, '.github', 'dependabot.yml');
+      assert.equal(await fileExists(targetPath), true);
+      const content = await readFileSafe(targetPath);
+      assert.ok(content?.includes('package-ecosystem: "npm"'));
+      assert.ok(content?.includes('package-ecosystem: "github-actions"'));
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it('should auto-fix docker-002 by creating .dockerignore', async () => {
     const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-fix-doc2-'));
     try {
@@ -239,6 +296,43 @@ describe('Auto-Fixers Safety & Idempotency', () => {
       assert.equal(await fileExists(targetPath), true);
       const content = await readFileSafe(targetPath);
       assert.ok(content?.includes('node_modules'));
+    } finally {
+      await fsp.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should support dry-run mode without writing files to disk', async () => {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'repodoctor-fix-dry-'));
+    try {
+      const context = await createRuleContext({ rootDir: tmpDir });
+      const violations: RuleResult[] = [
+        {
+          ruleId: 'git-001',
+          ruleTitle: 'Gitattributes',
+          category: 'git',
+          severity: 'warn',
+          message: 'Missing .gitattributes',
+          fixable: true
+        },
+        {
+          ruleId: 'oss-009',
+          ruleTitle: 'CODEOWNERS',
+          category: 'oss',
+          severity: 'warn',
+          message: 'Missing CODEOWNERS',
+          fixable: true
+        }
+      ];
+
+      const fixes = await applyRuleFixes(violations, context, { dryRun: true });
+      assert.equal(fixes.length, 2);
+      assert.equal(fixes[0]?.fixed, true);
+      assert.ok(fixes[0]?.message.startsWith('[Dry Run]'));
+      assert.ok(fixes[1]?.message.startsWith('[Dry Run]'));
+
+      // Verify files were NOT written to disk
+      assert.equal(await fileExists(path.join(tmpDir, '.gitattributes')), false);
+      assert.equal(await fileExists(path.join(tmpDir, '.github', 'CODEOWNERS')), false);
     } finally {
       await fsp.rm(tmpDir, { recursive: true, force: true });
     }

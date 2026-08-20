@@ -4,6 +4,7 @@ import { RepoDoctorEngine } from '../../core/engine.js';
 import {
   formatGitHubAnnotations,
   formatJsonReport,
+  formatMarkdownPrSummary,
   formatMarkdownReport,
   formatSarifReport,
   formatTerminalReport
@@ -12,12 +13,13 @@ import { dirExists, writeFileSafe } from '../../utils/fs.js';
 
 export interface CheckCliOptions {
   config?: string;
-  format?: 'terminal' | 'json' | 'sarif' | 'markdown' | 'github';
+  format?: 'terminal' | 'json' | 'sarif' | 'markdown' | 'markdown-pr' | 'github';
   output?: string;
   scoreThreshold?: string;
   maxWarnings?: string;
   strict?: boolean;
   fix?: boolean;
+  summary?: boolean;
 }
 
 export async function runCheckCommand(target = '.', options: CheckCliOptions = {}): Promise<number> {
@@ -48,7 +50,8 @@ export async function runCheckCommand(target = '.', options: CheckCliOptions = {
       report = runRes.report;
     }
 
-    const format = options.format || 'terminal';
+    let format = options.summary ? 'markdown-pr' : (options.format || 'terminal');
+
     let outputText = '';
 
     switch (format) {
@@ -57,6 +60,9 @@ export async function runCheckCommand(target = '.', options: CheckCliOptions = {
         break;
       case 'sarif':
         outputText = formatSarifReport(report);
+        break;
+      case 'markdown-pr':
+        outputText = formatMarkdownPrSummary(report, fixes);
         break;
       case 'markdown':
         outputText = formatMarkdownReport(report, fixes);
