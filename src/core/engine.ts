@@ -124,7 +124,7 @@ export class RepoDoctorEngine {
     const report: EngineReport = {
       timestamp: new Date().toISOString(),
       targetDir: this.rootDir,
-      version: '0.1.1',
+      version: '0.1.3',
       results: allResults,
       score,
       summary,

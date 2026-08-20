@@ -11,7 +11,7 @@ export function createCli(): Command {
   program
     .name('repodoctor')
     .description('Zero-config Repository Health, Security & CI Linter for modern open-source projects')
-    .version('0.1.1');
+    .version('0.1.3');
 
   program
     .command('check', { isDefault: true })
